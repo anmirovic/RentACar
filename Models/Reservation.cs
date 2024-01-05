@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -8,12 +9,14 @@ namespace Databaseaccess.Models
 {
     public class Reservation
     {
-        // CREATE (n:User {Username: "dianne", email: "dia@themail.com", password:"hHJgYzI26pIaO", role: "user"});
-        public int Id { get; set; }
+    
+        [Required]
         public DateTime ReservationDate { get; set; }
+        [Required]
         public int Duration { get; set; } //in days
       
-        public List<Review> Reviews { get; set; }
+        [JsonIgnore]
+        public List<Review>? Reviews { get; set; }
         
     }
 }

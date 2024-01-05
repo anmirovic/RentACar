@@ -8,14 +8,15 @@ namespace Databaseaccess.Models
 {
     public class Vehicle
     {
-        // CREATE (n:User {Username: "dianne", email: "dia@themail.com", password:"hHJgYzI26pIaO", role: "user"});
-        public int Id { get; set; }
+        
         public string VehicleType { get; set; }
         public string Brand { get; set; }
         public double DailyPrice { get; set; }
         public bool Availability { get; set; }
 
+        [JsonIgnore]
         public List<Reservation> Reservations { get; set; }
+        [JsonIgnore]
         public List<Review> Reviews { get; set; }
     }
 }
