@@ -4,6 +4,8 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+
 
 namespace Databaseaccess.Models
 {
@@ -19,9 +21,11 @@ namespace Databaseaccess.Models
         public string Role { get; set; }
 
         [JsonIgnore]
-        public List<Reservation> Reservations { get; set; }
+        [BindRequired]
+        public List<Reservation>? Reservations { get; set; }
         [JsonIgnore]
-        public List<Review> Reviews { get; set; }
+        [BindRequired]
+        public List<Review>? Reviews { get; set; }
         
        
         
