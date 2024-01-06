@@ -21,10 +21,8 @@ namespace Databaseaccess.Models
         public string Role { get; set; }
 
         [JsonIgnore]
-        [BindRequired]
         public List<Reservation>? Reservations { get; set; }
         [JsonIgnore]
-        [BindRequired]
         public List<Review>? Reviews { get; set; }
         
        

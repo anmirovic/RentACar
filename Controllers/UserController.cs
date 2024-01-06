@@ -25,13 +25,7 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var query = @"CREATE (n:User { username: $username, email: $email, password: $password, role: $role})
-                                
-                                  CREATE (m:Reservation { reservationDate: $reservationDate, duration: $duration})
-                                  CREATE (o:Review { rating: $rating, comment: $comment})
-                            
-                                  CREATE (n)-[:MAKES]->(m)
-                                  CREATE (n)-[:GIVES]->(o)";
+                    var query = @"CREATE (n:User { username: $username, email: $email, password: $password, role: $role})";
 
                     var parameters = new
                     {
@@ -39,12 +33,6 @@ namespace Databaseaccess.Controllers
                         email = user.Email,
                         password = user.Password,
                         role = user.Role,
-                        //Reservation
-                        reservationDate = user.Reservations?.FirstOrDefault()?.ReservationDate,
-                        duration = user.Reservations?.FirstOrDefault()?.Duration,
-                        //Review
-                        rating = user.Reviews?.FirstOrDefault()?.Rating,
-                        comment = user.Reviews?.FirstOrDefault()?.Comment
                     };
                     
                     await session.RunAsync(query, parameters);
