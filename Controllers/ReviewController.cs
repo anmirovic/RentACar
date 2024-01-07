@@ -18,8 +18,8 @@ namespace Databaseaccess.Controllers
             _driver = driver;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddReview(int userId, Review review)
+        [HttpPost("AddReview")]
+        public async Task<IActionResult> AddReview(Review review)
         {
             try
             {
@@ -27,13 +27,13 @@ namespace Databaseaccess.Controllers
                 {
                     
                     var query = @"
-                        MATCH (u:User) WHERE ID(u) = $userId
-                        CREATE (rv:Review { rating: $rating, comment: $comment })
-                        CREATE (u)-[:GIVES]->(rv)";
+                        CREATE (r:Review {
+                            rating: $rating,
+                            comment: $comment
+                        })";
                     
                     var parameters = new
                     {
-                        userId = userId,
                         rating = review.Rating,
                         comment = review.Comment
                     };
@@ -46,7 +46,68 @@ namespace Databaseaccess.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        
         }
+
+        [HttpPost("GiveReview")]
+        public async Task<IActionResult> GiveReview(int userId, int reviewId)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    
+                    var query = @"MATCH (u:User) WHERE ID(u) = $uId
+                                MATCH (r:Review) WHERE ID(r) = $rId
+                                CREATE (u)-[:GIVES]->(r)";
+                    
+                    var parameters = new
+                    {
+                        uId = userId,
+                        rId=reviewId
+                    };
+
+                    await session.RunAsync(query, parameters);
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        
+        }
+
+        // [HttpGet("AllReviews")]
+        // public async Task<IActionResult> AllReviews()
+        // {
+        //     try
+        //     {
+        //         using (var session = _driver.AsyncSession())
+        //         {
+        //             var result = await session.ReadTransactionAsync(async tx =>
+        //             {
+        //                 var query = "MATCH (n:Review) RETURN n";
+        //                 var cursor = await tx.RunAsync(query);
+        //                 var nodes = new List<INode>();
+
+        //                 await cursor.ForEachAsync(record =>
+        //                 {
+        //                     var node = record["n"].As<INode>();
+        //                     nodes.Add(node);
+        //                 });
+
+        //                 return nodes;
+        //             });
+
+        //             return Ok(result);
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(ex.Message);
+        //     }
+        // }
 
         [HttpGet("AllReviews")]
         public async Task<IActionResult> AllReviews()
@@ -59,12 +120,19 @@ namespace Databaseaccess.Controllers
                     {
                         var query = "MATCH (n:Review) RETURN n";
                         var cursor = await tx.RunAsync(query);
-                        var nodes = new List<INode>();
+                        var nodes = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
                             var node = record["n"].As<INode>();
-                            nodes.Add(node);
+
+                            var reviewAttributes = new Dictionary<string, object>();
+                            foreach (var property in node.Properties)
+                            {
+                                reviewAttributes.Add(property.Key, property.Value);
+                            }
+
+                            nodes.Add(reviewAttributes);
                         });
 
                         return nodes;

@@ -68,6 +68,38 @@ namespace Databaseaccess.Controllers
             }
         }
 
+        // [HttpGet("AllUsers")]
+        // public async Task<IActionResult> AllUsers()
+        // {
+        //     try
+        //     {
+        //         using (var session = _driver.AsyncSession())
+        //         {
+        //             var result = await session.ReadTransactionAsync(async tx =>
+        //             {
+        //                 var query = "MATCH (n:User) RETURN n";
+        //                 var cursor = await tx.RunAsync(query);
+        //                 var nodes = new List<INode>();
+
+        //                 await cursor.ForEachAsync(record =>
+        //                 {
+        //                     var node = record["n"].As<INode>();
+        //                     nodes.Add(node);
+        //                 });
+
+        //                 return nodes;
+        //             });
+
+        //             return Ok(result);
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(ex.Message);
+        //     }
+        // }
+
+    
         [HttpGet("AllUsers")]
         public async Task<IActionResult> AllUsers()
         {
@@ -79,15 +111,22 @@ namespace Databaseaccess.Controllers
                     {
                         var query = "MATCH (n:User) RETURN n";
                         var cursor = await tx.RunAsync(query);
-                        var nodes = new List<INode>();
+                        var users = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
                             var node = record["n"].As<INode>();
-                            nodes.Add(node);
+
+                            var userAttributes = new Dictionary<string, object>();
+                            foreach (var property in node.Properties)
+                            {
+                                userAttributes.Add(property.Key, property.Value);
+                            }
+
+                            users.Add(userAttributes);
                         });
 
-                        return nodes;
+                        return users;
                     });
 
                     return Ok(result);

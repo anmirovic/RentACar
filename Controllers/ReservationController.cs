@@ -18,8 +18,8 @@ namespace Databaseaccess.Controllers
             _driver = driver;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> AddReservation(int userId, Reservation reservation)
+        [HttpPost("AddReservation")]
+        public async Task<IActionResult> AddReservation(Reservation reservation)
         {
             try
             {
@@ -27,13 +27,13 @@ namespace Databaseaccess.Controllers
                 {
                     
                     var query = @"
-                        MATCH (u:User) WHERE ID(u) = $userId
-                        CREATE (r:Reservation { reservationDate: $reservationDate, duration: $duration })
-                        CREATE (u)-[:MAKES]->(r)";
+                        CREATE (r:Reservation {
+                            reservationDate: $reservationDate,
+                            duration: $duration 
+                        })";
                     
                     var parameters = new
                     {
-                        userId = userId,
                         reservationDate = reservation.ReservationDate,
                         duration = reservation.Duration
                     };
@@ -49,6 +49,67 @@ namespace Databaseaccess.Controllers
         
         }
 
+        [HttpPost("MakeReservation")]
+        public async Task<IActionResult> MakeReservation(int userId, int reservationId)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    
+                    var query = @"MATCH (u:User) WHERE ID(u) = $uId
+                                MATCH (r:Reservation) WHERE ID(r) = $rId
+                                CREATE (u)-[:MAKES]->(r)";
+                    
+                    var parameters = new
+                    {
+                        uId = userId,
+                        rId=reservationId
+                    };
+
+                    await session.RunAsync(query, parameters);
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        
+        }
+
+        // [HttpGet("AllReservations")]
+        // public async Task<IActionResult> AllReservations()
+        // {
+        //     try
+        //     {
+        //         using (var session = _driver.AsyncSession())
+        //         {
+        //             var result = await session.ReadTransactionAsync(async tx =>
+        //             {
+        //                 var query = "MATCH (n:Reservation) RETURN n";
+        //                 var cursor = await tx.RunAsync(query);
+        //                 var nodes = new List<INode>();
+
+        //                 await cursor.ForEachAsync(record =>
+        //                 {
+        //                     var node = record["n"].As<INode>();
+        //                     nodes.Add(node);
+        //                 });
+
+        //                 return nodes;
+        //             });
+
+        //             return Ok(result);
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(ex.Message);
+        //     }
+        // }
+
+        
         [HttpGet("AllReservations")]
         public async Task<IActionResult> AllReservations()
         {
@@ -60,12 +121,20 @@ namespace Databaseaccess.Controllers
                     {
                         var query = "MATCH (n:Reservation) RETURN n";
                         var cursor = await tx.RunAsync(query);
-                        var nodes = new List<INode>();
+                        var nodes = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
                             var node = record["n"].As<INode>();
-                            nodes.Add(node);
+
+                            var reservationAttributes = new Dictionary<string, object>();
+                            foreach (var property in node.Properties)
+                            {
+                                reservationAttributes.Add(property.Key, property.Value);
+                            }
+
+                            nodes.Add(reservationAttributes);
+                            
                         });
 
                         return nodes;
