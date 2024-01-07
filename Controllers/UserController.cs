@@ -67,5 +67,64 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("AllUsers")]
+        public async Task<IActionResult> AllUsers()
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var query = "MATCH (n:User) RETURN n";
+                        var cursor = await tx.RunAsync(query);
+                        var nodes = new List<INode>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var node = record["n"].As<INode>();
+                            nodes.Add(node);
+                        });
+
+                        return nodes;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("UpdateUser")]
+        public async Task<IActionResult> UpdateUser(int userId, string newUsername, string newEmail, string newPassword, string newRole)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var query = @"MATCH (n:User) WHERE ID(n)=$aId
+                                SET n.username=$username
+                                SET n.email=$email
+                                SET n.password=$password
+                                SET n.role=$role
+                                RETURN n";
+                    var parameters = new { aId = userId,
+                                        username = newUsername,
+                                        email = newEmail,
+                                        password = newPassword,
+                                        role = newRole };
+                    await session.RunAsync(query, parameters);
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

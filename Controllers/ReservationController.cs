@@ -46,9 +46,89 @@ namespace Databaseaccess.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        
         }
+
+        [HttpGet("AllReservations")]
+        public async Task<IActionResult> AllReservations()
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var query = "MATCH (n:Reservation) RETURN n";
+                        var cursor = await tx.RunAsync(query);
+                        var nodes = new List<INode>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var node = record["n"].As<INode>();
+                            nodes.Add(node);
+                        });
+
+                        return nodes;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
+        [HttpDelete]
+        public async Task<IActionResult> RemoveReservation(int reservationId)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var query = @"MATCH (a:Reservation) where ID(a)=$aId
+                                OPTIONAL MATCH (a)-[r]-()
+                                DELETE r,a";
+                    var parameters = new { aId = reservationId };
+                    await session.RunAsync(query, parameters);
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPut("UpdateReservation")]
+        public async Task<IActionResult> UpdateReservation(int reservationId, int newDuration, DateTime newReservationDate)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var query = @"MATCH (n:Reservation) WHERE ID(n)=$aId
+                                SET n.duration=$duration
+                                SET n.reservationDate=$reservationDate
+                                RETURN n";
+                    var parameters = new { aId = reservationId,
+                                        duration = newDuration,
+                                        reservationDate = newReservationDate };
+                    await session.RunAsync(query, parameters);
+                    return Ok();
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
     }
 
 
 }
+
 
