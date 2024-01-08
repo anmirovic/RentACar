@@ -24,6 +24,8 @@ namespace Databaseaccess.Models
         public List<Reservation>? Reservations { get; set; }
         [JsonIgnore]
         public List<Review>? Reviews { get; set; }
+        [JsonIgnore]
+        public List<Vehicle>? Vehicles { get; set; }
         
        
         

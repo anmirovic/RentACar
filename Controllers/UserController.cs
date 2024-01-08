@@ -46,6 +46,43 @@ namespace Databaseaccess.Controllers
             }
         }
 
+        //ovde je jedino sa proverom da li postoji user sa tim id, chatgpt
+        // [HttpDelete]
+        // public async Task<IActionResult> RemoveUser(int userId)
+        // {
+        //     try
+        //     {
+        //         using (var session = _driver.AsyncSession())
+        //         {
+        //             var query = "MATCH (p:User) WHERE ID(p)=$id RETURN p";
+        //             var checkParameters = new { id = userId };
+        //             var checkResult = await session.ReadTransactionAsync(async tx =>
+        //             {
+        //                 var checkCursor = await tx.RunAsync(query, checkParameters);
+        //                 var resultSummary = await checkCursor.ConsumeAsync();  
+        //                 return resultSummary.Counters.NodesCreated > 0;  
+        //             });
+
+        //             if (!checkResult)
+        //             {
+                        
+        //                 return NotFound($"Korisnik sa ID {userId} ne postoji.");
+        //             }
+
+                    
+        //             var deleteQuery = @"MATCH (p:User) WHERE ID(p)=$id
+        //                                 OPTIONAL MATCH (p)-[r]->(otherSide)
+        //                                 DELETE r, p, otherSide";
+        //             var deleteParameters = new { id = userId };
+        //             await session.RunAsync(deleteQuery, deleteParameters);
+        //             return Ok();
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(ex.Message);
+        //     }
+        // }
 
         [HttpDelete]
         public async Task<IActionResult> RemoveUser(int userId)
@@ -54,10 +91,10 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var query = @"MATCH (p:User) WHERE ID(p)=$id
-                                OPTIONAL MATCH (p)-[r]->(otherSide)
-                                DELETE r,p,otherSide"; 
-                    var parameters = new { id = userId };
+                    var query = @"MATCH (a:User) where ID(a)=$aId
+                                OPTIONAL MATCH (a)-[r]-()
+                                DELETE r,a";
+                    var parameters = new { aId = userId };
                     await session.RunAsync(query, parameters);
                     return Ok();
                 }
@@ -67,6 +104,7 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
 
         // [HttpGet("AllUsers")]
         // public async Task<IActionResult> AllUsers()
@@ -99,7 +137,7 @@ namespace Databaseaccess.Controllers
         //     }
         // }
 
-    
+        
         [HttpGet("AllUsers")]
         public async Task<IActionResult> AllUsers()
         {
@@ -165,5 +203,7 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        
     }
 }
