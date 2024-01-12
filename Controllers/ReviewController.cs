@@ -78,36 +78,6 @@ namespace Databaseaccess.Controllers
         
         }
 
-        // [HttpGet("AllReviews")]
-        // public async Task<IActionResult> AllReviews()
-        // {
-        //     try
-        //     {
-        //         using (var session = _driver.AsyncSession())
-        //         {
-        //             var result = await session.ReadTransactionAsync(async tx =>
-        //             {
-        //                 var query = "MATCH (n:Review) RETURN n";
-        //                 var cursor = await tx.RunAsync(query);
-        //                 var nodes = new List<INode>();
-
-        //                 await cursor.ForEachAsync(record =>
-        //                 {
-        //                     var node = record["n"].As<INode>();
-        //                     nodes.Add(node);
-        //                 });
-
-        //                 return nodes;
-        //             });
-
-        //             return Ok(result);
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         return BadRequest(ex.Message);
-        //     }
-        // }
 
         [HttpGet("AllReviews")]
         public async Task<IActionResult> AllReviews()
@@ -155,6 +125,17 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var checkReviewQuery = "MATCH (r:Review) WHERE ID(r) = $aId RETURN COUNT(r) as count";
+                    var checkReviewParameters = new { aId = reviewId };
+                    var result = await session.RunAsync(checkReviewQuery, checkReviewParameters);
+
+                    var count = await result.SingleAsync(r => r["count"].As<int>());
+
+                    if (count == 0)
+                    {
+                        return NotFound($"Review with ID {reviewId} does not exist.");
+                    }
+
                     var query = @"MATCH (a:Review) where ID(a)=$aId
                                 OPTIONAL MATCH (a)-[r]-()
                                 DELETE r,a";
@@ -176,6 +157,17 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var checkReviewQuery = "MATCH (r:Review) WHERE ID(r) = $aId RETURN COUNT(r) as count";
+                    var checkReviewParameters = new { aId = reviewId };
+                    var result = await session.RunAsync(checkReviewQuery, checkReviewParameters);
+
+                    var count = await result.SingleAsync(r => r["count"].As<int>());
+
+                    if (count == 0)
+                    {
+                        return NotFound($"Review with ID {reviewId} does not exist.");
+                    }
+                    
                     var query = @"MATCH (n:Review) WHERE ID(n)=$aId
                                 SET n.rating=$rating
                                 SET n.comment=$comment

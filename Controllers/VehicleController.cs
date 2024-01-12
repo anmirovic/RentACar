@@ -180,6 +180,17 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var checkVehicleQuery = "MATCH (v:Vehicle) WHERE ID(v) = $aId RETURN COUNT(v) as count";
+                    var checkVehicleParameters = new { aId = vehicleId };
+                    var result = await session.RunAsync(checkVehicleQuery, checkVehicleParameters);
+
+                    var count = await result.SingleAsync(r => r["count"].As<int>());
+
+                    if (count == 0)
+                    {
+                        return NotFound($"Vehicle with ID {vehicleId} does not exist.");
+                    }
+
                     var query = @"MATCH (n:Vehicle) WHERE ID(n)=$aId
                                 SET n.vehicleType=$vehicleType
                                 SET n.brand=$brand
@@ -208,6 +219,17 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var checkVehicleQuery = "MATCH (v:Vehicle) WHERE ID(v) = $aId RETURN COUNT(v) as count";
+                    var checkVehicleParameters = new { aId = vehicleId };
+                    var result = await session.RunAsync(checkVehicleQuery, checkVehicleParameters);
+
+                    var count = await result.SingleAsync(r => r["count"].As<int>());
+
+                    if (count == 0)
+                    {
+                        return NotFound($"Vehicle with ID {vehicleId} does not exist.");
+                    }
+
                     var query = @"MATCH (a:Vehicle) where ID(a)=$aId
                                 OPTIONAL MATCH (a)-[r]-()
                                 DELETE r,a";
@@ -288,15 +310,48 @@ namespace Databaseaccess.Controllers
             }
         }
 
+        // [HttpGet("ByDailyPrice")]
+        // public async Task<IActionResult> GetVehiclesByDailyPrice(double dailyPrice)
+        // {
+        //     try
+        //     {
+        //         using (var session = _driver.AsyncSession())
+        //         {
+        //             var query = "MATCH (n:Vehicle) WHERE n.dailyPrice = $dailyPrice RETURN n";
+        //             var parameters = new { dailyPrice };
+        //             var result = await session.ReadTransactionAsync(async tx =>
+        //             {
+        //                 var cursor = await tx.RunAsync(query, parameters);
+        //                 var vehicles = new List<Vehicle>();
+
+        //                 await cursor.ForEachAsync(record =>
+        //                 {
+        //                     var node = record["n"].As<INode>();
+        //                     var vehicle = ConvertNodeToVehicle(node);
+        //                     vehicles.Add(vehicle);
+        //                 });
+
+        //                 return vehicles;
+        //             });
+
+        //             return Ok(result);
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(ex.Message);
+        //     }
+        // }
+
         [HttpGet("ByDailyPrice")]
-        public async Task<IActionResult> GetVehiclesByDailyPrice(double dailyPrice)
+        public async Task<IActionResult> GetVehiclesByDailyPrice(double minDailyPrice, double maxDailyPrice)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var query = "MATCH (n:Vehicle) WHERE n.dailyPrice = $dailyPrice RETURN n";
-                    var parameters = new { dailyPrice };
+                    var query = "MATCH (n:Vehicle) WHERE n.dailyPrice >= $minDailyPrice AND n.dailyPrice <= $maxDailyPrice RETURN n";
+                    var parameters = new { minDailyPrice, maxDailyPrice };
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
                         var cursor = await tx.RunAsync(query, parameters);
@@ -320,6 +375,7 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
 
         [HttpGet("AvailableVehicles")]
         public async Task<IActionResult> GetAvailableVehicles()

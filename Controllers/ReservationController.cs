@@ -78,37 +78,6 @@ namespace Databaseaccess.Controllers
         
         }
 
-        // [HttpGet("AllReservations")]
-        // public async Task<IActionResult> AllReservations()
-        // {
-        //     try
-        //     {
-        //         using (var session = _driver.AsyncSession())
-        //         {
-        //             var result = await session.ReadTransactionAsync(async tx =>
-        //             {
-        //                 var query = "MATCH (n:Reservation) RETURN n";
-        //                 var cursor = await tx.RunAsync(query);
-        //                 var nodes = new List<INode>();
-
-        //                 await cursor.ForEachAsync(record =>
-        //                 {
-        //                     var node = record["n"].As<INode>();
-        //                     nodes.Add(node);
-        //                 });
-
-        //                 return nodes;
-        //             });
-
-        //             return Ok(result);
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         return BadRequest(ex.Message);
-        //     }
-        // }
-
         
         [HttpGet("AllReservations")]
         public async Task<IActionResult> AllReservations()
@@ -157,6 +126,17 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var checkReservationQuery = "MATCH (r:Reservation) WHERE ID(r) = $aId RETURN COUNT(r) as count";
+                    var checkReservationParameters = new { aId = reservationId };
+                    var result = await session.RunAsync(checkReservationQuery, checkReservationParameters);
+
+                    var count = await result.SingleAsync(r => r["count"].As<int>());
+
+                    if (count == 0)
+                    {
+                        return NotFound($"Reservation with ID {reservationId} does not exist.");
+                    }
+
                     var query = @"MATCH (a:Reservation) where ID(a)=$aId
                                 OPTIONAL MATCH (a)-[r]-()
                                 DELETE r,a";
@@ -178,6 +158,17 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var checkReservationQuery = "MATCH (r:Reservation) WHERE ID(r) = $aId RETURN COUNT(r) as count";
+                    var checkReservationParameters = new { aId = reservationId };
+                    var result = await session.RunAsync(checkReservationQuery, checkReservationParameters);
+
+                    var count = await result.SingleAsync(r => r["count"].As<int>());
+
+                    if (count == 0)
+                    {
+                        return NotFound($"Reservation with ID {reservationId} does not exist.");
+                    }
+
                     var query = @"MATCH (n:Reservation) WHERE ID(n)=$aId
                                 SET n.duration=$duration
                                 SET n.reservationDate=$reservationDate
