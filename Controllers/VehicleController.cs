@@ -310,6 +310,38 @@ namespace Databaseaccess.Controllers
             }
         }
 
+        [HttpGet("AllVehicleTypes")]
+        public async Task<IActionResult> AllVehicleTypes()
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var query = "MATCH (n:Vehicle) RETURN DISTINCT n.vehicleType as vehicleType";
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var cursor = await tx.RunAsync(query);
+                        var vehicleTypes = new List<string>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var type = record["vehicleType"].As<string>();
+                            vehicleTypes.Add(type);
+                        });
+
+                        return vehicleTypes;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
         // [HttpGet("ByDailyPrice")]
         // public async Task<IActionResult> GetVehiclesByDailyPrice(double dailyPrice)
         // {
