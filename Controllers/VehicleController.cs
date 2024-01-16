@@ -27,24 +27,28 @@ namespace Databaseaccess.Controllers
                 {
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
-                        var query = "MATCH (n:Vehicle) RETURN n";
+                        var query = "MATCH (n:Vehicle) RETURN ID(n) as vehicleId, n";
                         var cursor = await tx.RunAsync(query);
-                        var nodes = new List<object>();
+                        var vehicles = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
-                            var node = record["n"].As<INode>();
+                            var vehicle = new Dictionary<string, object>();
+                            vehicle.Add("vehicleId", record["vehicleId"].As<long>());
 
+                            var node = record["n"].As<INode>();
                             var vehicleAttributes = new Dictionary<string, object>();
+
                             foreach (var property in node.Properties)
                             {
                                 vehicleAttributes.Add(property.Key, property.Value);
                             }
 
-                            nodes.Add(vehicleAttributes);
+                            vehicle.Add("attributes", vehicleAttributes);
+                            vehicles.Add(vehicle);
                         });
 
-                        return nodes;
+                        return vehicles;
                     });
 
                     return Ok(result);
@@ -55,6 +59,7 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
 
         [HttpPost]
         public async Task<IActionResult> AddVehicle(Vehicle vehicle)

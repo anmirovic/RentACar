@@ -88,24 +88,28 @@ namespace Databaseaccess.Controllers
                 {
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
-                        var query = "MATCH (n:Review) RETURN n";
+                        var query = "MATCH (n:Review) RETURN ID(n) as reviewId, n";
                         var cursor = await tx.RunAsync(query);
-                        var nodes = new List<object>();
+                        var reviews = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
-                            var node = record["n"].As<INode>();
+                            var review = new Dictionary<string, object>();
+                            review.Add("reviewId", record["reviewId"].As<long>());
 
+                            var node = record["n"].As<INode>();
                             var reviewAttributes = new Dictionary<string, object>();
+
                             foreach (var property in node.Properties)
                             {
                                 reviewAttributes.Add(property.Key, property.Value);
                             }
 
-                            nodes.Add(reviewAttributes);
+                            review.Add("attributes", reviewAttributes);
+                            reviews.Add(review);
                         });
 
-                        return nodes;
+                        return reviews;
                     });
 
                     return Ok(result);
