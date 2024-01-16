@@ -33,3 +33,8 @@ D:\Neo4j Projekat\RentaCar\obj\Debug\net7.0\refint\RentaCar.dll
 D:\Neo4j Projekat\RentaCar\obj\Debug\net7.0\RentaCar.pdb
 D:\Neo4j Projekat\RentaCar\obj\Debug\net7.0\RentaCar.genruntimeconfig.cache
 D:\Neo4j Projekat\RentaCar\obj\Debug\net7.0\ref\RentaCar.dll
+D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Abstractions.dll
+D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Logging.dll
+D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Tokens.dll
+D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\System.IdentityModel.Tokens.Jwt.dll

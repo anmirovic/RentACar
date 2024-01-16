@@ -4,6 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Databaseaccess.Models;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Security.Cryptography;
 
 
 namespace Databaseaccess.Controllers
@@ -13,11 +17,26 @@ namespace Databaseaccess.Controllers
     public class UserController : ControllerBase
     {
         private readonly IDriver _driver;
+        private readonly string _jwtSecret;
+        private readonly int _jwtExpirationMinutes = 1440;
 
         public UserController(IDriver driver)
         {
             _driver = driver;
+            _jwtSecret = _jwtSecret = GenerateRandomKey(2048);
+
         }
+    
+    private string GenerateRandomKey(int keySize)
+    {
+            using (var rsa = new RSACng(keySize))
+            {
+                RSAParameters parameters = rsa.ExportParameters(true);
+                byte[] key = parameters.Modulus;
+                return Convert.ToBase64String(key);
+            }
+    }
+
 
     [HttpPost("RegisterUser")]
     public async Task<IActionResult> RegisterUser(User user)
@@ -114,7 +133,8 @@ namespace Databaseaccess.Controllers
                 if (await result.FetchAsync())
                 {
                     var userId = result.Current["userId"].As<long>();
-                    return Ok($"User with ID {userId} successfully logged in.");
+                    var token = GenerateJwtToken(userId.ToString());
+                    return Ok(new { UserId = userId, Token = token, Message = "User successfully logged in." });
                 }
                 else
                 {
@@ -127,6 +147,26 @@ namespace Databaseaccess.Controllers
             return BadRequest(ex.Message);
         }
     }
+
+    private string GenerateJwtToken(string userId)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Convert.FromBase64String(_jwtSecret);
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(new[]
+            {
+                new Claim(ClaimTypes.Name, userId)
+            }),
+            Expires = DateTime.UtcNow.AddMinutes(_jwtExpirationMinutes),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
+    }
+
 
 
     //    [HttpPost]
