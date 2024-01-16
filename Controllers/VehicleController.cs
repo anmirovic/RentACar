@@ -256,21 +256,62 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var query = "MATCH (n:Vehicle) WHERE n.brand = $brand RETURN n";
+                    var query = "MATCH (n:Vehicle) WHERE n.brand = $brand RETURN ID(n) as vehicleId, n";
                     var parameters = new { brand };
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
                         var cursor = await tx.RunAsync(query, parameters);
-                        var vehicles = new List<Vehicle>();
+                        var vehicles = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
+                            var vehicle = new Dictionary<string, object>();
+                            vehicle.Add("vehicleId", record["vehicleId"].As<long>());
+
                             var node = record["n"].As<INode>();
-                            var vehicle = ConvertNodeToVehicle(node);
+                            var vehicleAttributes = new Dictionary<string, object>();
+
+                            foreach (var property in node.Properties)
+                            {
+                                vehicleAttributes.Add(property.Key, property.Value);
+                            }
+
+                            vehicle.Add("attributes", vehicleAttributes);
                             vehicles.Add(vehicle);
                         });
 
                         return vehicles;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("AllVehicleBrands")]
+        public async Task<IActionResult> AllVehicleBrands()
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var query = "MATCH (n:Vehicle) RETURN DISTINCT n.brand as brand";
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var cursor = await tx.RunAsync(query);
+                        var vehicleBrands = new List<string>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var brand = record["brand"].As<string>();
+                            vehicleBrands.Add(brand);
+                        });
+
+                        return vehicleBrands;
                     });
 
                     return Ok(result);
@@ -289,17 +330,27 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var query = "MATCH (n:Vehicle) WHERE n.vehicleType = $vehicleType RETURN n";
+                    var query = "MATCH (n:Vehicle) WHERE n.vehicleType = $vehicleType RETURN ID(n) as vehicleId, n";
                     var parameters = new { vehicleType };
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
                         var cursor = await tx.RunAsync(query, parameters);
-                        var vehicles = new List<Vehicle>();
+                        var vehicles = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
+                            var vehicle = new Dictionary<string, object>();
+                            vehicle.Add("vehicleId", record["vehicleId"].As<long>());
+
                             var node = record["n"].As<INode>();
-                            var vehicle = ConvertNodeToVehicle(node);
+                            var vehicleAttributes = new Dictionary<string, object>();
+
+                            foreach (var property in node.Properties)
+                            {
+                                vehicleAttributes.Add(property.Key, property.Value);
+                            }
+
+                            vehicle.Add("attributes", vehicleAttributes);
                             vehicles.Add(vehicle);
                         });
 
@@ -314,6 +365,7 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
 
         [HttpGet("AllVehicleTypes")]
         public async Task<IActionResult> AllVehicleTypes()
@@ -421,16 +473,26 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var query = "MATCH (n:Vehicle) WHERE n.availability = true RETURN n";
+                    var query = "MATCH (n:Vehicle) WHERE n.availability = true RETURN ID(n) as vehicleId, n";
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
                         var cursor = await tx.RunAsync(query);
-                        var vehicles = new List<Vehicle>();
+                        var vehicles = new List<object>();
 
                         await cursor.ForEachAsync(record =>
                         {
+                            var vehicle = new Dictionary<string, object>();
+                            vehicle.Add("vehicleId", record["vehicleId"].As<long>());
+
                             var node = record["n"].As<INode>();
-                            var vehicle = ConvertNodeToVehicle(node);
+                            var vehicleAttributes = new Dictionary<string, object>();
+
+                            foreach (var property in node.Properties)
+                            {
+                                vehicleAttributes.Add(property.Key, property.Value);
+                            }
+
+                            vehicle.Add("attributes", vehicleAttributes);
                             vehicles.Add(vehicle);
                         });
 
@@ -445,6 +507,7 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
 
         private Vehicle ConvertNodeToVehicle(INode node)
         {

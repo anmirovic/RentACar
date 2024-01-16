@@ -19,33 +19,143 @@ namespace Databaseaccess.Controllers
             _driver = driver;
         }
 
-       [HttpPost]
-        public async Task<IActionResult> AddUser(User user)
+    [HttpPost("RegisterUser")]
+    public async Task<IActionResult> RegisterUser(User user)
+    {
+        try
         {
-            try
+            
+            if (await IsEmailTaken(user.Email))
             {
-                using (var session = _driver.AsyncSession())
-                {
-                    var query = @"CREATE (n:User { username: $username, email: $email, password: $password, role: $role})";
-
-                    var parameters = new
-                    {
-                        username = user.Username,
-                        email = user.Email,
-                        password = user.Password,
-                        role = user.Role,
-                    };
-                    
-                    await session.RunAsync(query, parameters);
-                    return Ok();
-                    
-                }
+                return BadRequest("Email is already taken.");
             }
-            catch (Exception ex)
+
+            
+            var addUserResult = await AddUser(user);
+
+            
+            if (addUserResult is OkResult)
             {
-                return BadRequest(ex.Message);
+                return Ok("User registered successfully.");
+            }
+            else
+            {
+                
+                return addUserResult;
             }
         }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPost("AddUser")]
+    public async Task<IActionResult> AddUser(User user)
+    {
+        try
+        {
+            
+            if (await IsEmailTaken(user.Email))
+            {
+                return BadRequest("Email is already taken.");
+            }
+
+            using (var session = _driver.AsyncSession())
+            {
+                var query = @"CREATE (n:User { username: $username, email: $email, password: $password, role: $role})";
+
+                var parameters = new
+                {
+                    username = user.Username,
+                    email = user.Email,
+                    password = user.Password, 
+                    role = user.Role,
+                };
+
+                await session.RunAsync(query, parameters);
+                return Ok();
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    private async Task<bool> IsEmailTaken(string email)
+    {
+        using (var session = _driver.AsyncSession())
+        {
+            var query = "MATCH (n:User {email: $email}) RETURN COUNT(n) as count";
+            var parameters = new { email };
+
+            var result = await session.RunAsync(query, parameters);
+            var count = await result.SingleAsync(r => r["count"].As<int>());
+
+            return count > 0;
+        }
+    }
+
+    
+    [HttpPost("LoginUser")]
+    public async Task<IActionResult> LoginUser(string username, string password)
+    {
+        try
+        {
+            using (var session = _driver.AsyncSession())
+            {
+                
+                var query = "MATCH (n:User {username: $username, password: $password}) RETURN ID(n) as userId, n";
+                var parameters = new { username, password };
+
+                var result = await session.RunAsync(query, parameters);
+
+                if (await result.FetchAsync())
+                {
+                    var userId = result.Current["userId"].As<long>();
+                    return Ok($"User with ID {userId} successfully logged in.");
+                }
+                else
+                {
+                    return Unauthorized("Invalid username or password.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+
+    //    [HttpPost]
+    //     public async Task<IActionResult> AddUser(User user)
+    //     {
+    //         try
+    //         {
+    //             using (var session = _driver.AsyncSession())
+    //             {
+    //                 var query = @"CREATE (n:User { username: $username, email: $email, password: $password, role: $role})";
+
+    //                 var parameters = new
+    //                 {
+    //                     username = user.Username,
+    //                     email = user.Email,
+    //                     password = user.Password,
+    //                     role = user.Role,
+    //                 };
+                    
+    //                 await session.RunAsync(query, parameters);
+    //                 return Ok();
+                    
+    //             }
+    //         }
+    //         catch (Exception ex)
+    //         {
+    //             return BadRequest(ex.Message);
+    //         }
+    //     }
 
 
         [HttpDelete]

@@ -29,6 +29,12 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
+app.UseCors(options => options
+    .WithOrigins(new[] { "http://localhost:5173" })
+    .AllowAnyHeader()
+    .AllowAnyMethod()
+    .AllowCredentials());
+
 app.UseEndpoints(endpoints =>
 {
     _ = endpoints.MapControllers();
