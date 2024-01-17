@@ -116,39 +116,41 @@ namespace Databaseaccess.Controllers
         }
     }
 
-    
-    [HttpPost("LoginUser")]
-    public async Task<IActionResult> LoginUser(string username, string password)
-    {
-        try
+
+        [HttpPost("LoginUser")]
+        public async Task<IActionResult> LoginUser(string username, string password)
         {
-            using (var session = _driver.AsyncSession())
+            try
             {
-                
-                var query = "MATCH (n:User {username: $username, password: $password}) RETURN ID(n) as userId, n";
-                var parameters = new { username, password };
-
-                var result = await session.RunAsync(query, parameters);
-
-                if (await result.FetchAsync())
+                using (var session = _driver.AsyncSession())
                 {
-                    var userId = result.Current["userId"].As<long>();
-                    var token = GenerateJwtToken(userId.ToString());
-                    return Ok(new { UserId = userId, Token = token, Message = "User successfully logged in." });
-                }
-                else
-                {
-                    return Unauthorized("Invalid username or password.");
+
+                    var query = "MATCH (n:User {username: $username, password: $password}) RETURN ID(n) as userId, n";
+                    var parameters = new { username, password };
+
+                    var result = await session.RunAsync(query, parameters);
+
+                    if (await result.FetchAsync())
+                    {
+                        var userId = result.Current["userId"].As<long>();
+                        var token = GenerateJwtToken(userId.ToString());
+                        //Response.Cookies.Append("jwt", token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
+                        //return Ok(new {  message = "success" });
+                        return Ok(new { UserId = userId, Username = username, Token = token, Message = "User successfully logged in." });
+                    }
+                    else
+                    {
+                        return Unauthorized("Invalid username or password.");
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
 
-    private string GenerateJwtToken(string userId)
+        private string GenerateJwtToken(string userId)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Convert.FromBase64String(_jwtSecret);
