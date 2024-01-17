@@ -56,6 +56,16 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var reservationDetailsQuery = "MATCH (r:Reservation) WHERE ID(r) = $rId RETURN r";
+                    var reservationDetailsParameters = new { rId = reservationId };
+                    var reservationDetailsResult = await session.RunAsync(reservationDetailsQuery, reservationDetailsParameters);
+                    var reservationNode = await reservationDetailsResult.SingleAsync();
+
+                    if (reservationNode == null)
+                    {
+                        return NotFound($"Reservation with ID {reservationId} does not exist.");
+                    }
+
                     
                     var query = @"MATCH (u:User) WHERE ID(u) = $uId
                                 MATCH (r:Reservation) WHERE ID(r) = $rId
@@ -147,7 +157,6 @@ namespace Databaseaccess.Controllers
                         MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
                         WHERE ID(r) = $aId
                         SET v.availability = true
-                        DELETE rel
                     ";
                     var parameters = new { aId = reservationId };
                     await session.RunAsync(updateAvailabilityQuery, parameters);
@@ -205,44 +214,7 @@ namespace Databaseaccess.Controllers
         }
 
        
-[HttpGet("CheckAndUpdateAvailability")]
-public async Task<IActionResult> CheckAndUpdateAvailability()
-{
-    try
-    {
-        using (var session = _driver.AsyncSession())
-        {
-            var currentDate = DateTime.UtcNow.Date;
-            var checkAndUpdateQuery = @"
-                MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
-                WHERE date(r.reservationDate) + duration({days: r.duration}) < date($currentDate)
-                SET v.availability = true
-                DELETE rel
-                RETURN ID(r) as reservationId, r";
-
-            var parameters = new { currentDate };
-            var result = await session.WriteTransactionAsync(async tx =>
-            {
-                var cursor = await tx.RunAsync(checkAndUpdateQuery, parameters);
-                var reservationsToUpdate = new List<object>();
-
-                await cursor.ForEachAsync(record =>
-                {
-                    var reservationId = record["reservationId"].As<long>();
-                    reservationsToUpdate.Add(reservationId);
-                });
-
-                return reservationsToUpdate;
-            });
-
-            return Ok(result);
-        }
-    }
-    catch (Exception ex)
-    {
-        return BadRequest(ex.Message);
-    }
-}
+        
 
 
     }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Databaseaccess.Models;
 
+
 namespace Databaseaccess.Controllers
 {
     [ApiController]
@@ -12,6 +13,8 @@ namespace Databaseaccess.Controllers
     public class VehicleController : ControllerBase
     {
         private readonly IDriver _driver;
+        private readonly ReservationController _reservationController;
+       
 
         public VehicleController(IDriver driver)
         {
@@ -89,11 +92,129 @@ namespace Databaseaccess.Controllers
             }
         }
 
-        [HttpPost("VehicleReservations")]
-        public async Task<IActionResult> VehicleReservations(int vehicleId, int reservationId)
+        [HttpPost("CheckReservationAvailability")]
+        public async Task<IActionResult> CheckReservationAvailability(int reservationId)
         {
             try
             {
+                using (var session = _driver.AsyncSession())
+                {
+                    
+                    var fetchReservationQuery = @"
+                        MATCH (r:Reservation)
+                        WHERE id(r) = $reservationId
+                        RETURN r";
+
+                    var fetchParameters = new
+                    {
+                        reservationId
+                    };
+
+                    var fetchResult = await session.RunAsync(fetchReservationQuery, fetchParameters);
+                    var existingReservation = await fetchResult.SingleAsync(r => r["r"].As<INode>());
+
+                    if (existingReservation == null)
+                    {
+                        return BadRequest("Reservation not found.");
+                    }
+
+                    DateTimeOffset existingEndDate = existingReservation["reservationDate"].As<DateTimeOffset>().AddDays(existingReservation["duration"].As<int>());
+
+                    
+                    var checkAvailabilityQuery = @"
+                        MATCH (r:Reservation)
+                        WHERE datetime($reservationDate) < datetime(r.reservationDate) + duration({days: r.duration})
+                        AND datetime($endDate) > datetime(r.reservationDate)
+                        AND id(r) <> $reservationId
+                        RETURN COUNT(r) as count";
+
+                    var parameters = new
+                    {
+                        reservationDate = existingReservation["reservationDate"].As<DateTimeOffset>(),
+                        endDate = existingEndDate,
+                        reservationId
+                    };
+
+                    var result = await session.RunAsync(checkAvailabilityQuery, parameters);
+                    var count = await result.SingleAsync(r => r["count"].As<int>());
+
+                    if (count > 0)
+                    {
+                        return BadRequest("Reservation overlaps with an existing reservation.");
+                    }
+
+                    return Ok("Reservation can be made.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
+        // [HttpPost("VehicleReservation")]
+        // public async Task<IActionResult> VehicleReservation(int vehicleId, int reservationId)
+        // {
+        //     try
+        //     {
+                
+        //         IActionResult availabilityCheckResult = await CheckReservationAvailability(reservationId);
+        //         if (availabilityCheckResult is BadRequestObjectResult)
+        //         {
+                    
+        //             return availabilityCheckResult;
+        //         }
+
+                
+        //         using (var session = _driver.AsyncSession())
+        //         {
+        //             var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
+        //                                     RETURN v";
+
+        //             var checkAvailabilityParameters = new { vId = vehicleId };
+
+        //             var result = await session.RunAsync(checkAvailabilityQuery, checkAvailabilityParameters);
+        //             var record = await result.SingleAsync();
+
+        //             if (record == null)
+        //             {
+        //                 return BadRequest("The vehicle is not available for reservation.");
+        //             }
+
+        //             var updateAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId
+        //                                 SET v.availability = false";
+
+        //             var updateAvailabilityParameters = new { vId = vehicleId };
+
+        //             await session.RunAsync(updateAvailabilityQuery, updateAvailabilityParameters);
+
+        //             var query = @"MATCH (u:Vehicle) WHERE ID(u) = $uId
+        //                         MATCH (r:Reservation) WHERE ID(r) = $rId
+        //                         CREATE (u)-[:RESERVED]->(r)";
+
+        //             var parameters = new
+        //             {
+        //                 uId = vehicleId,
+        //                 rId = reservationId
+        //             };
+
+        //             await session.RunAsync(query, parameters);
+        //             return Ok();
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(ex.Message);
+        //     }
+        // }
+
+        [HttpPost("VehicleReservation")]
+        public async Task<IActionResult> VehicleReservation(int vehicleId, int reservationId)
+        {
+            try
+            {
+                
                 using (var session = _driver.AsyncSession())
                 {
                     var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
@@ -136,6 +257,7 @@ namespace Databaseaccess.Controllers
             }
         
         }
+
 
 
 
