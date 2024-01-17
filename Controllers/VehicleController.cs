@@ -96,6 +96,25 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
+                                           RETURN v";
+
+                    var checkAvailabilityParameters = new { vId = vehicleId };
+
+                    var result = await session.RunAsync(checkAvailabilityQuery, checkAvailabilityParameters);
+                    var record = await result.SingleAsync();
+
+                    if (record==null)
+                    {
+                        return BadRequest("The vehicle is not available for reservation.");
+                    }
+
+                    var updateAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId
+                                           SET v.availability = false";
+
+                    var updateAvailabilityParameters = new { vId = vehicleId };
+
+                    await session.RunAsync(updateAvailabilityQuery, updateAvailabilityParameters);
                     
                     var query = @"MATCH (u:Vehicle) WHERE ID(u) = $uId
                                 MATCH (r:Reservation) WHERE ID(r) = $rId
@@ -117,6 +136,8 @@ namespace Databaseaccess.Controllers
             }
         
         }
+
+
 
         [HttpPost("VehicleReviews")]
         public async Task<IActionResult> VehicleReviews(int vehicleId, int reviewId)
@@ -521,5 +542,7 @@ namespace Databaseaccess.Controllers
 
             return vehicle;
         }
+
+
     }
 }

@@ -123,6 +123,7 @@ namespace Databaseaccess.Controllers
         }
 
 
+    
         [HttpDelete]
         public async Task<IActionResult> RemoveReservation(int reservationId)
         {
@@ -141,11 +142,22 @@ namespace Databaseaccess.Controllers
                         return NotFound($"Reservation with ID {reservationId} does not exist.");
                     }
 
-                    var query = @"MATCH (a:Reservation) where ID(a)=$aId
+                    
+                    var updateAvailabilityQuery = @"
+                        MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
+                        WHERE ID(r) = $aId
+                        SET v.availability = true
+                        DELETE rel
+                    ";
+                    var parameters = new { aId = reservationId };
+                    await session.RunAsync(updateAvailabilityQuery, parameters);
+
+                    var deleteQuery = @"MATCH (a:Reservation) where ID(a)=$aId
                                 OPTIONAL MATCH (a)-[r]-()
                                 DELETE r,a";
-                    var parameters = new { aId = reservationId };
-                    await session.RunAsync(query, parameters);
+
+                    await session.RunAsync(deleteQuery, parameters);
+
                     return Ok();
                 }
             }
@@ -154,6 +166,8 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+
 
         [HttpPut("UpdateReservation")]
         public async Task<IActionResult> UpdateReservation(int reservationId, int newDuration, DateTime newReservationDate)
@@ -189,6 +203,47 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+       
+[HttpGet("CheckAndUpdateAvailability")]
+public async Task<IActionResult> CheckAndUpdateAvailability()
+{
+    try
+    {
+        using (var session = _driver.AsyncSession())
+        {
+            var currentDate = DateTime.UtcNow.Date;
+            var checkAndUpdateQuery = @"
+                MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
+                WHERE date(r.reservationDate) + duration({days: r.duration}) < date($currentDate)
+                SET v.availability = true
+                DELETE rel
+                RETURN ID(r) as reservationId, r";
+
+            var parameters = new { currentDate };
+            var result = await session.WriteTransactionAsync(async tx =>
+            {
+                var cursor = await tx.RunAsync(checkAndUpdateQuery, parameters);
+                var reservationsToUpdate = new List<object>();
+
+                await cursor.ForEachAsync(record =>
+                {
+                    var reservationId = record["reservationId"].As<long>();
+                    reservationsToUpdate.Add(reservationId);
+                });
+
+                return reservationsToUpdate;
+            });
+
+            return Ok(result);
+        }
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(ex.Message);
+    }
+}
+
 
     }
 

@@ -167,6 +167,48 @@ namespace Databaseaccess.Controllers
         return tokenHandler.WriteToken(token);
     }
 
+    [HttpGet("GetUserById")]
+    public async Task<IActionResult> GetUserById(int userId)
+    {
+        try
+        {
+            using (var session = _driver.AsyncSession())
+            {
+                var query = "MATCH (n:User) WHERE ID(n) = $userId RETURN ID(n) as userId, n";
+                var parameters = new { userId };
+
+                var result = await session.RunAsync(query, parameters);
+
+                if (await result.FetchAsync())
+                {
+                    var user = new Dictionary<string, object>();
+                    user.Add("userId", result.Current["userId"].As<long>());
+
+                    var node = result.Current["n"].As<INode>();
+                    var userAttributes = new Dictionary<string, object>();
+
+                    foreach (var property in node.Properties)
+                    {
+                        userAttributes.Add(property.Key, property.Value);
+                    }
+
+                    user.Add("attributes", userAttributes);
+
+                    return Ok(user);
+                }
+                else
+                {
+                    return NotFound($"User with ID {userId} not found.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+
 
 
     //    [HttpPost]
