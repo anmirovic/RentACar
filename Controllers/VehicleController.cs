@@ -104,56 +104,94 @@ namespace Databaseaccess.Controllers
                     var parameters2 = new { reservationId = reservationId.ToString() };
 
                     var result2 = await session.RunAsync(query2, parameters2);
-                    var resultList = new List<object>();
+                    //var resultList = new List<Reservation>();
 
-                    await result2.ForEachAsync(record =>
+                    //await result2.ForEachAsync(record =>
+                    //{
+                    //    var reservationAttributes = new Reservation();
+                    //    var item = record["n"].As<INode>();
+
+                    //    reservationAttributes.Id = item.Properties["Id"].ToString();
+                    //    reservationAttributes.PickupDate = (ZonedDateTime)item.Properties["pickupDate"];
+                    //    reservationAttributes.ReturnDate = (ZonedDateTime)item.Properties["returnDate"];
+
+                    //    resultList.Add(reservationAttributes);
+                    //});
+
+                    var resultList = await session.ReadTransactionAsync(async tx =>
                     {
-                        var reservationAttributes = new Dictionary<string, object>();
-                        var item = record["n"].As<INode>();
-                        foreach (var property in item.Properties)
+                        var result2 = await tx.RunAsync(query2, parameters2);
+                        var resultList2 = new List<Reservation>();
+                        await result2.ForEachAsync(record =>
                         {
-                            reservationAttributes.Add(property.Key, property.Value);
-                        }
-                        resultList.Add(reservationAttributes);
+                            var reservation = new Reservation();
+                            //reservation.Add("Id", record["r"].As<string>());
+
+                            var node = record["r"].As<INode>();
+                            var reservationAttributes = new Dictionary<string, object>();
+                            reservation.Id = node.Properties["Id"].ToString();
+                            reservation.PickupDate = (ZonedDateTime)node.Properties["pickupDate"];
+                            reservation.ReturnDate = (ZonedDateTime)node.Properties["returnDate"];
+                            resultList2.Add(reservation);
+                        });
+                        return resultList2;
                     });
 
 
 
+
                     var query = @"MATCH (v:Vehicle)-[:RESERVED]->(r:Reservation)
-                                WHERE v.ID = $vehicleId
-                                RETURN ID(r) as reservationId, r";
+                                WHERE v.Id = $vehicleId
+                                RETURN r";
 
                     var parameters = new { vehicleId };
 
-                    var reservations = new List<object>();
-                    await session.ReadTransactionAsync(async tx =>
+                    //var reservations = new List<object>();
+                    var reservations = await session.ReadTransactionAsync(async tx =>
                     {
                         var cursor = await tx.RunAsync(query, parameters);
-                        //var reservations = new List<object>();
+                        var reservations = new List<Reservation>();
 
                         await cursor.ForEachAsync(record =>
                         {
-                            var reservation = new Dictionary<string, object>();
-                            reservation.Add("reservationId", record["reservationId"].As<long>());
+                            var reservation = new Reservation();
+                            //reservation.Add("Id", record["r"].As<string>());
 
                             var node = record["r"].As<INode>();
                             var reservationAttributes = new Dictionary<string, object>();
+                            reservation.Id = node.Properties["Id"].ToString();
+                            reservation.PickupDate = (ZonedDateTime)node.Properties["pickupDate"];
+                            reservation.ReturnDate = (ZonedDateTime)node.Properties["returnDate"];
+                            //foreach (var property in node.Properties)
+                            //{
+                            //    reservationAttributes.Add(property.Key, property.Value);
+                            //}
 
-                            foreach (var property in node.Properties)
-                            {
-                                reservationAttributes.Add(property.Key, property.Value);
-                            }
-
-                            reservation.Add("attributes", reservationAttributes);
+                            //reservation.Add("attributes", reservationAttributes);
                             reservations.Add(reservation);
                         });
 
                         return reservations;
                     });
-                    foreach(object reservation in reservations)
+                    foreach(var reservation in reservations)
                     {
-
+                        if (resultList[0].PickupDate >= reservation.PickupDate && resultList[0].PickupDate <= reservation.ReturnDate)
+                            flag = false;
+                        if (resultList[0].ReturnDate >= reservation.PickupDate && resultList[0].ReturnDate <= reservation.ReturnDate)
+                            flag = false;
                     }
+
+                    var query3 = @"MATCH (u:Vehicle) WHERE u.Id = $uId
+                                MATCH (r:Reservation) WHERE r.Id = $rId
+                                CREATE (u)-[:RESERVED]->(r)";
+
+                    var parameters3 = new
+                    {
+                        uId = vehicleId,
+                        rId = reservationId
+                    };
+
+                    await session.RunAsync(query3, parameters3);
 
 
                     //var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
