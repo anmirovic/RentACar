@@ -4343,19 +4343,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\anastasija\\.nuget\\packages\\": {}
+    "C:\\Users\\nikola\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Neo4j Projekat\\RentaCar\\RentaCar.csproj",
+      "projectUniqueName": "D:\\RentaCar\\RentaCar.csproj",
       "projectName": "RentaCar",
-      "projectPath": "D:\\Neo4j Projekat\\RentaCar\\RentaCar.csproj",
-      "packagesPath": "C:\\Users\\anastasija\\.nuget\\packages\\",
-      "outputPath": "D:\\Neo4j Projekat\\RentaCar\\obj\\",
+      "projectPath": "D:\\RentaCar\\RentaCar.csproj",
+      "packagesPath": "C:\\Users\\nikola\\.nuget\\packages\\",
+      "outputPath": "D:\\RentaCar\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\anastasija\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\nikola\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [

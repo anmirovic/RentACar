@@ -25,17 +25,26 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    
+
+                    //var query = @"
+                    //    CREATE (r:Reservation {
+                    //        Id: $Id,
+                    //        reservationDate: $reservationDate,
+                    //        duration: $duration 
+                    //    })";
+
                     var query = @"
                         CREATE (r:Reservation {
-                            reservationDate: $reservationDate,
-                            duration: $duration 
+                            Id: $Id,
+                            pickupDate: $pickupDate,
+                            returnDate: $returnDate
                         })";
-                    
+
                     var parameters = new
                     {
-                        reservationDate = reservation.ReservationDate,
-                        duration = reservation.Duration
+                        Id = Guid.NewGuid().ToString(),
+                        pickupDate = reservation.PickupDate,
+                        returnDate = reservation.ReturnDate
                     };
 
                     await session.RunAsync(query, parameters);
@@ -50,25 +59,15 @@ namespace Databaseaccess.Controllers
         }
 
         [HttpPost("MakeReservation")]
-        public async Task<IActionResult> MakeReservation(int userId, int reservationId)
+        public async Task<IActionResult> MakeReservation(int userId, string reservationId)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var reservationDetailsQuery = "MATCH (r:Reservation) WHERE ID(r) = $rId RETURN r";
-                    var reservationDetailsParameters = new { rId = reservationId };
-                    var reservationDetailsResult = await session.RunAsync(reservationDetailsQuery, reservationDetailsParameters);
-                    var reservationNode = await reservationDetailsResult.SingleAsync();
-
-                    if (reservationNode == null)
-                    {
-                        return NotFound($"Reservation with ID {reservationId} does not exist.");
-                    }
-
                     
                     var query = @"MATCH (u:User) WHERE ID(u) = $uId
-                                MATCH (r:Reservation) WHERE ID(r) = $rId
+                                MATCH (r:Reservation) WHERE r.Id = $rId
                                 CREATE (u)-[:MAKES]->(r)";
                     
                     var parameters = new
@@ -135,13 +134,13 @@ namespace Databaseaccess.Controllers
 
     
         [HttpDelete]
-        public async Task<IActionResult> RemoveReservation(int reservationId)
+        public async Task<IActionResult> RemoveReservation(string reservationId)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var checkReservationQuery = "MATCH (r:Reservation) WHERE ID(r) = $aId RETURN COUNT(r) as count";
+                    var checkReservationQuery = "MATCH (r:Reservation) WHERE r.ID = $aId RETURN COUNT(r) as count";
                     var checkReservationParameters = new { aId = reservationId };
                     var result = await session.RunAsync(checkReservationQuery, checkReservationParameters);
 
@@ -155,8 +154,9 @@ namespace Databaseaccess.Controllers
                     
                     var updateAvailabilityQuery = @"
                         MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
-                        WHERE ID(r) = $aId
+                        WHERE r.ID = $aId
                         SET v.availability = true
+                        DELETE rel
                     ";
                     var parameters = new { aId = reservationId };
                     await session.RunAsync(updateAvailabilityQuery, parameters);
@@ -214,7 +214,44 @@ namespace Databaseaccess.Controllers
         }
 
        
-        
+[HttpGet("CheckAndUpdateAvailability")]
+public async Task<IActionResult> CheckAndUpdateAvailability()
+{
+    try
+    {
+        using (var session = _driver.AsyncSession())
+        {
+            var currentDate = DateTime.UtcNow.Date;
+            var checkAndUpdateQuery = @"
+                MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
+                WHERE date(r.reservationDate) + duration({days: r.duration}) < date($currentDate)
+                SET v.availability = true
+                DELETE rel
+                RETURN ID(r) as reservationId, r";
+
+            var parameters = new { currentDate };
+            var result = await session.WriteTransactionAsync(async tx =>
+            {
+                var cursor = await tx.RunAsync(checkAndUpdateQuery, parameters);
+                var reservationsToUpdate = new List<object>();
+
+                await cursor.ForEachAsync(record =>
+                {
+                    var reservationId = record["reservationId"].As<long>();
+                    reservationsToUpdate.Add(reservationId);
+                });
+
+                return reservationsToUpdate;
+            });
+
+            return Ok(result);
+        }
+    }
+    catch (Exception ex)
+    {
+        return BadRequest(ex.Message);
+    }
+}
 
 
     }

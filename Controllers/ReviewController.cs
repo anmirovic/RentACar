@@ -28,12 +28,14 @@ namespace Databaseaccess.Controllers
                     
                     var query = @"
                         CREATE (r:Review {
+                            Id: $Id,
                             rating: $rating,
                             comment: $comment
                         })";
                     
                     var parameters = new
                     {
+                        Id = Guid.NewGuid().ToString(),
                         rating = review.Rating,
                         comment = review.Comment
                     };

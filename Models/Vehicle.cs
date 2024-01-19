@@ -9,6 +9,7 @@ namespace Databaseaccess.Models
 {
     public class Vehicle
     {
+        public string Id { get; set; }
         [Required]
         public string VehicleType { get; set; }
         [Required]

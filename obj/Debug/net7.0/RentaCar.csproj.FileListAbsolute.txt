@@ -38,3 +38,43 @@ D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.JsonWebToken
 D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Logging.dll
 D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Tokens.dll
 D:\Neo4j Projekat\RentaCar\bin\Debug\net7.0\System.IdentityModel.Tokens.Jwt.dll
+D:\RentaCar\bin\Debug\net7.0\appsettings.Development.json
+D:\RentaCar\bin\Debug\net7.0\appsettings.json
+D:\RentaCar\bin\Debug\net7.0\RentaCar.exe
+D:\RentaCar\bin\Debug\net7.0\RentaCar.deps.json
+D:\RentaCar\bin\Debug\net7.0\RentaCar.runtimeconfig.json
+D:\RentaCar\bin\Debug\net7.0\RentaCar.dll
+D:\RentaCar\bin\Debug\net7.0\RentaCar.pdb
+D:\RentaCar\bin\Debug\net7.0\Microsoft.AspNetCore.OpenApi.dll
+D:\RentaCar\bin\Debug\net7.0\Microsoft.Bcl.AsyncInterfaces.dll
+D:\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Abstractions.dll
+D:\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Logging.dll
+D:\RentaCar\bin\Debug\net7.0\Microsoft.IdentityModel.Tokens.dll
+D:\RentaCar\bin\Debug\net7.0\Microsoft.OpenApi.dll
+D:\RentaCar\bin\Debug\net7.0\Neo4j.Driver.dll
+D:\RentaCar\bin\Debug\net7.0\Swashbuckle.AspNetCore.Swagger.dll
+D:\RentaCar\bin\Debug\net7.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+D:\RentaCar\bin\Debug\net7.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+D:\RentaCar\bin\Debug\net7.0\System.IdentityModel.Tokens.Jwt.dll
+D:\RentaCar\obj\Debug\net7.0\RentaCar.csproj.AssemblyReference.cache
+D:\RentaCar\obj\Debug\net7.0\RentaCar.GeneratedMSBuildEditorConfig.editorconfig
+D:\RentaCar\obj\Debug\net7.0\RentaCar.AssemblyInfoInputs.cache
+D:\RentaCar\obj\Debug\net7.0\RentaCar.AssemblyInfo.cs
+D:\RentaCar\obj\Debug\net7.0\RentaCar.csproj.CoreCompileInputs.cache
+D:\RentaCar\obj\Debug\net7.0\RentaCar.MvcApplicationPartsAssemblyInfo.cs
+D:\RentaCar\obj\Debug\net7.0\RentaCar.MvcApplicationPartsAssemblyInfo.cache
+D:\RentaCar\obj\Debug\net7.0\staticwebassets\msbuild.RentaCar.Microsoft.AspNetCore.StaticWebAssets.props
+D:\RentaCar\obj\Debug\net7.0\staticwebassets\msbuild.build.RentaCar.props
+D:\RentaCar\obj\Debug\net7.0\staticwebassets\msbuild.buildMultiTargeting.RentaCar.props
+D:\RentaCar\obj\Debug\net7.0\staticwebassets\msbuild.buildTransitive.RentaCar.props
+D:\RentaCar\obj\Debug\net7.0\staticwebassets.pack.json
+D:\RentaCar\obj\Debug\net7.0\staticwebassets.build.json
+D:\RentaCar\obj\Debug\net7.0\staticwebassets.development.json
+D:\RentaCar\obj\Debug\net7.0\scopedcss\bundle\RentaCar.styles.css
+D:\RentaCar\obj\Debug\net7.0\RentaCar.csproj.CopyComplete
+D:\RentaCar\obj\Debug\net7.0\RentaCar.dll
+D:\RentaCar\obj\Debug\net7.0\refint\RentaCar.dll
+D:\RentaCar\obj\Debug\net7.0\RentaCar.pdb
+D:\RentaCar\obj\Debug\net7.0\RentaCar.genruntimeconfig.cache
+D:\RentaCar\obj\Debug\net7.0\ref\RentaCar.dll

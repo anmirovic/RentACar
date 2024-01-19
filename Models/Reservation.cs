@@ -9,12 +9,15 @@ namespace Databaseaccess.Models
 {
     public class Reservation
     {
-    
+        public string Id { get; set; }
+        //[Required]
+        //public DateTime ReservationDate { get; set; }
+        //[Required]
+        //public int Duration { get; set; } //in days
         [Required]
-        public DateTime ReservationDate { get; set; }
+        public DateTime PickupDate { get; set; }
         [Required]
-        public int Duration { get; set; } //in days
-      
+        public DateTime ReturnDate { get; set; }
         [JsonIgnore]
         public List<Review>? Reviews { get; set; }
         

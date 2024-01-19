@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Databaseaccess.Models;
 
-
 namespace Databaseaccess.Controllers
 {
     [ApiController]
@@ -13,8 +12,6 @@ namespace Databaseaccess.Controllers
     public class VehicleController : ControllerBase
     {
         private readonly IDriver _driver;
-        private readonly ReservationController _reservationController;
-       
 
         public VehicleController(IDriver driver)
         {
@@ -71,10 +68,11 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var query = @"CREATE (n:Vehicle { vehicleType: $vehicleType, brand: $brand, dailyPrice: $dailyPrice, availability: $availability})";
+                    var query = @"CREATE (n:Vehicle { Id: $Id, vehicleType: $vehicleType, brand: $brand, dailyPrice: $dailyPrice, availability: $availability})";
 
                     var parameters = new
                     {
+                        Id = Guid.NewGuid().ToString(),
                         vehicleType = vehicle.VehicleType,
                         brand = vehicle.Brand,
                         dailyPrice = vehicle.DailyPrice,
@@ -82,7 +80,7 @@ namespace Databaseaccess.Controllers
                     };
                     
                     await session.RunAsync(query, parameters);
-                    return Ok();
+                    return Ok(parameters.Id);
                     
                 }
             }
@@ -92,162 +90,83 @@ namespace Databaseaccess.Controllers
             }
         }
 
-        [HttpPost("CheckReservationAvailability")]
-        public async Task<IActionResult> CheckReservationAvailability(int reservationId)
+        [HttpPost("VehicleReservations")]
+        public async Task<IActionResult> VehicleReservations(string vehicleId, string reservationId)
         {
+            bool flag = true;
+
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    
-                    var fetchReservationQuery = @"
-                        MATCH (r:Reservation)
-                        WHERE id(r) = $reservationId
-                        RETURN r";
+                    var query = @"MATCH (v:Vehicle)-[:RESERVED]->(r:Reservation)
+                                WHERE v.ID = $vehicleId
+                                RETURN ID(r) as reservationId, r";
 
-                    var fetchParameters = new
+                    var parameters = new { vehicleId };
+
+                    var reservations = new List<object>();
+                    await session.ReadTransactionAsync(async tx =>
                     {
-                        reservationId
-                    };
+                        var cursor = await tx.RunAsync(query, parameters);
+                        //var reservations = new List<object>();
 
-                    var fetchResult = await session.RunAsync(fetchReservationQuery, fetchParameters);
-                    var existingReservation = await fetchResult.SingleAsync(r => r["r"].As<INode>());
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var reservation = new Dictionary<string, object>();
+                            reservation.Add("reservationId", record["reservationId"].As<long>());
 
-                    if (existingReservation == null)
-                    {
-                        return BadRequest("Reservation not found.");
+                            var node = record["r"].As<INode>();
+                            var reservationAttributes = new Dictionary<string, object>();
+
+                            foreach (var property in node.Properties)
+                            {
+                                reservationAttributes.Add(property.Key, property.Value);
+                            }
+
+                            reservation.Add("attributes", reservationAttributes);
+                            reservations.Add(reservation);
+                        });
+
+                        //return reservations;
+                    });
+                    foreach(object reservation in reservations)
+                    { 
+                        
                     }
 
-                    DateTimeOffset existingEndDate = existingReservation["reservationDate"].As<DateTimeOffset>().AddDays(existingReservation["duration"].As<int>());
 
-                    
-                    var checkAvailabilityQuery = @"
-                        MATCH (r:Reservation)
-                        WHERE datetime($reservationDate) < datetime(r.reservationDate) + duration({days: r.duration})
-                        AND datetime($endDate) > datetime(r.reservationDate)
-                        AND id(r) <> $reservationId
-                        RETURN COUNT(r) as count";
+                    //var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
+                    //                       RETURN v";
 
-                    var parameters = new
-                    {
-                        reservationDate = existingReservation["reservationDate"].As<DateTimeOffset>(),
-                        endDate = existingEndDate,
-                        reservationId
-                    };
+                    //var checkAvailabilityParameters = new { vId = vehicleId };
 
-                    var result = await session.RunAsync(checkAvailabilityQuery, parameters);
-                    var count = await result.SingleAsync(r => r["count"].As<int>());
+                    //var result = await session.RunAsync(checkAvailabilityQuery, checkAvailabilityParameters);
+                    //var record = await result.SingleAsync();
 
-                    if (count > 0)
-                    {
-                        return BadRequest("Reservation overlaps with an existing reservation.");
-                    }
+                    //if (record==null)
+                    //{
+                    //    return BadRequest("The vehicle is not available for reservation.");
+                    //}
 
-                    return Ok("Reservation can be made.");
-                }
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
+                    //var updateAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId
+                    //                       SET v.availability = false";
 
+                    //var updateAvailabilityParameters = new { vId = vehicleId };
 
-        // [HttpPost("VehicleReservation")]
-        // public async Task<IActionResult> VehicleReservation(int vehicleId, int reservationId)
-        // {
-        //     try
-        //     {
-                
-        //         IActionResult availabilityCheckResult = await CheckReservationAvailability(reservationId);
-        //         if (availabilityCheckResult is BadRequestObjectResult)
-        //         {
-                    
-        //             return availabilityCheckResult;
-        //         }
+                    //await session.RunAsync(updateAvailabilityQuery, updateAvailabilityParameters);
 
-                
-        //         using (var session = _driver.AsyncSession())
-        //         {
-        //             var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
-        //                                     RETURN v";
+                    //var query = @"MATCH (u:Vehicle) WHERE ID(u) = $uId
+                    //            MATCH (r:Reservation) WHERE ID(r) = $rId
+                    //            CREATE (u)-[:RESERVED]->(r)";
 
-        //             var checkAvailabilityParameters = new { vId = vehicleId };
+                    //var parameters = new
+                    //{
+                    //    uId = vehicleId,
+                    //    rId=reservationId
+                    //};
 
-        //             var result = await session.RunAsync(checkAvailabilityQuery, checkAvailabilityParameters);
-        //             var record = await result.SingleAsync();
-
-        //             if (record == null)
-        //             {
-        //                 return BadRequest("The vehicle is not available for reservation.");
-        //             }
-
-        //             var updateAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId
-        //                                 SET v.availability = false";
-
-        //             var updateAvailabilityParameters = new { vId = vehicleId };
-
-        //             await session.RunAsync(updateAvailabilityQuery, updateAvailabilityParameters);
-
-        //             var query = @"MATCH (u:Vehicle) WHERE ID(u) = $uId
-        //                         MATCH (r:Reservation) WHERE ID(r) = $rId
-        //                         CREATE (u)-[:RESERVED]->(r)";
-
-        //             var parameters = new
-        //             {
-        //                 uId = vehicleId,
-        //                 rId = reservationId
-        //             };
-
-        //             await session.RunAsync(query, parameters);
-        //             return Ok();
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         return BadRequest(ex.Message);
-        //     }
-        // }
-
-        [HttpPost("VehicleReservation")]
-        public async Task<IActionResult> VehicleReservation(int vehicleId, int reservationId)
-        {
-            try
-            {
-                
-                using (var session = _driver.AsyncSession())
-                {
-                    var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
-                                           RETURN v";
-
-                    var checkAvailabilityParameters = new { vId = vehicleId };
-
-                    var result = await session.RunAsync(checkAvailabilityQuery, checkAvailabilityParameters);
-                    var record = await result.SingleAsync();
-
-                    if (record==null)
-                    {
-                        return BadRequest("The vehicle is not available for reservation.");
-                    }
-
-                    var updateAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId
-                                           SET v.availability = false";
-
-                    var updateAvailabilityParameters = new { vId = vehicleId };
-
-                    await session.RunAsync(updateAvailabilityQuery, updateAvailabilityParameters);
-                    
-                    var query = @"MATCH (u:Vehicle) WHERE ID(u) = $uId
-                                MATCH (r:Reservation) WHERE ID(r) = $rId
-                                CREATE (u)-[:RESERVED]->(r)";
-                    
-                    var parameters = new
-                    {
-                        uId = vehicleId,
-                        rId=reservationId
-                    };
-
-                    await session.RunAsync(query, parameters);
+                    //await session.RunAsync(query, parameters);
                     return Ok();
                 }
             }
@@ -260,9 +179,8 @@ namespace Databaseaccess.Controllers
 
 
 
-
         [HttpPost("VehicleReviews")]
-        public async Task<IActionResult> VehicleReviews(int vehicleId, int reviewId)
+        public async Task<IActionResult> VehicleReviews(int vehicleId, string reviewId)
         {
             try
             {
@@ -270,7 +188,7 @@ namespace Databaseaccess.Controllers
                 {
                     
                     var query = @"MATCH (u:Vehicle) WHERE ID(u) = $uId
-                                MATCH (r:Review) WHERE ID(r) = $rId
+                                MATCH (r:Review) WHERE r.ID = $rId
                                 CREATE (u)-[:HAS]->(r)";
                     
                     var parameters = new
@@ -291,7 +209,7 @@ namespace Databaseaccess.Controllers
         }
 
         [HttpPost("VehicleOwner")]
-        public async Task<IActionResult> VehicleOwner(int userId,int vehicleId)
+        public async Task<IActionResult> VehicleOwner(int userId,string vehicleId)
         {
             try
             {
@@ -299,7 +217,7 @@ namespace Databaseaccess.Controllers
                 {
                     
                     var query = @"MATCH (r:User) WHERE ID(r) = $rId
-                                MATCH (u:Vehicle) WHERE ID(u) = $uId
+                                MATCH (u:Vehicle) WHERE u.Id = $uId
                                 CREATE (r)-[:OWNS]->(u)";
                     
                     var parameters = new
@@ -663,6 +581,53 @@ namespace Databaseaccess.Controllers
             };
 
             return vehicle;
+        }
+
+        [HttpGet("GetAllReservationsofVehicle")]
+        public async Task<IActionResult> GetAllReservationsForVehicle(string vehicleId)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var query = @"MATCH (v:Vehicle)-[:RESERVED]->(r:Reservation)
+                                WHERE v.ID = $vehicleId
+                                RETURN ID(r) as reservationId, r";
+
+                    var parameters = new { vehicleId };
+
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var cursor = await tx.RunAsync(query, parameters);
+                        var reservations = new List<object>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var reservation = new Dictionary<string, object>();
+                            reservation.Add("reservationId", record["reservationId"].As<long>());
+
+                            var node = record["r"].As<INode>();
+                            var reservationAttributes = new Dictionary<string, object>();
+
+                            foreach (var property in node.Properties)
+                            {
+                                reservationAttributes.Add(property.Key, property.Value);
+                            }
+
+                            reservation.Add("attributes", reservationAttributes);
+                            reservations.Add(reservation);
+                        });
+
+                        return reservations;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
 

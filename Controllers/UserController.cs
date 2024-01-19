@@ -82,10 +82,11 @@ namespace Databaseaccess.Controllers
 
             using (var session = _driver.AsyncSession())
             {
-                var query = @"CREATE (n:User { username: $username, email: $email, password: $password, role: $role})";
+                var query = @"CREATE (n:User { Id: $Id, username: $username, email: $email, password: $password, role: $role})";
 
                 var parameters = new
                 {
+                    Id = Guid.NewGuid().ToString(),
                     username = user.Username,
                     email = user.Email,
                     password = user.Password, 
