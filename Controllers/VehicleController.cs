@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Databaseaccess.Models;
+using System.Xml.Linq;
 
 namespace Databaseaccess.Controllers
 {
@@ -99,6 +100,25 @@ namespace Databaseaccess.Controllers
             {
                 using (var session = _driver.AsyncSession())
                 {
+                    var query2 = "MATCH (n:Reservation) WHERE n.Id = $reservationId RETURN n";
+                    var parameters2 = new { reservationId = reservationId.ToString() };
+
+                    var result2 = await session.RunAsync(query2, parameters2);
+                    var resultList = new List<object>();
+
+                    await result2.ForEachAsync(record =>
+                    {
+                        var reservationAttributes = new Dictionary<string, object>();
+                        var item = record["n"].As<INode>();
+                        foreach (var property in item.Properties)
+                        {
+                            reservationAttributes.Add(property.Key, property.Value);
+                        }
+                        resultList.Add(reservationAttributes);
+                    });
+
+
+
                     var query = @"MATCH (v:Vehicle)-[:RESERVED]->(r:Reservation)
                                 WHERE v.ID = $vehicleId
                                 RETURN ID(r) as reservationId, r";
@@ -128,11 +148,11 @@ namespace Databaseaccess.Controllers
                             reservations.Add(reservation);
                         });
 
-                        //return reservations;
+                        return reservations;
                     });
                     foreach(object reservation in reservations)
-                    { 
-                        
+                    {
+
                     }
 
 
