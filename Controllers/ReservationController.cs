@@ -243,14 +243,50 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        [HttpGet("GetReservationsForUser")]
+        public async Task<IActionResult> GetReservationsForUser(string userId)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var query = @"
+                    MATCH (u:User {Id: $userId})-[:MAKES]->(r:Reservation)
+                    RETURN r";
+
+                        var parameters = new { userId };
+
+                        var cursor = await tx.RunAsync(query, parameters);
+                        var reservations = new List<Reservation>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var node = record["r"].As<INode>();
+                            var reservation = MapNodeToReservation(node);
+                            reservations.Add(reservation);
+                        });
+
+                        return reservations;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
         private Reservation MapNodeToReservation(INode node)
         {
             var reservation = new Reservation
             {
-                Id = node["Id"].As<string>(),
-                PickupDate = DateTime.Parse(node["pickupDate"].As<string>()),
-                ReturnDate = DateTime.Parse(node["returnDate"].As<string>()),   
+                Id = node.Properties["Id"].As<string>(),
+                PickupDate = DateTime.Parse(node.Properties["PickupDate"].As<string>()),
+                ReturnDate = DateTime.Parse(node.Properties["ReturnDate"].As<string>()),   
                     
             };
 
