@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 
+
+
 namespace Databaseaccess.Models
 {
     public class Reservation

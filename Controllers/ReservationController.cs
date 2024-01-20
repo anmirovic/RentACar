@@ -48,7 +48,7 @@ namespace Databaseaccess.Controllers
                     };
 
                     await session.RunAsync(query, parameters);
-                    return Ok();
+                    return Ok(parameters.Id);
                 }
             }
             catch (Exception ex)

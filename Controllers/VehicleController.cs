@@ -646,58 +646,69 @@ namespace Databaseaccess.Controllers
 
         // }
 
-       [HttpPost("VehicleReservations")]
-public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime pickupDate, DateTime returnDate)
-{
-    try
-    {
-        // Step 1: Check for overlapping reservations
-        var overlapResult = await CheckOverlappingReservations(vehicleId, pickupDate, returnDate);
-
-        if (overlapResult is BadRequestObjectResult)
+        [HttpPost("VehicleReservations")]
+        public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime pickupDate, DateTime returnDate)
         {
-            // Overlapping reservations exist, return the same BadRequest response.
-            return overlapResult;
+            try
+            {
+                // Step 1: Check for overlapping reservations
+                var overlapResult = await CheckOverlappingReservations(vehicleId, pickupDate, returnDate);
+
+                if (overlapResult is BadRequestObjectResult)
+                {
+                    // Overlapping reservations exist, return the same BadRequest response.
+                    return overlapResult;
+                }
+
+                // Step 2: If no overlapping reservations, proceed to create a new reservation
+                using (var session = _driver.AsyncSession())
+                {
+                    // Generate a unique reservationId
+                    string reservationId = Guid.NewGuid().ToString();
+
+                    var createReservationQuery = @"CREATE (r:Reservation {Id: $rId, PickupDate: $pickupDate, ReturnDate: $returnDate})";
+                    var createRelationQuery = @"MATCH (u:Vehicle {Id: $uId}), (r:Reservation {Id: $rId})
+                                                CREATE (u)-[:RESERVED]->(r)";
+
+                    var createParameters = new
+                    {
+                        rId = reservationId,
+                        pickupDate = pickupDate.ToString("yyyy-MM-ddTHH:mm:ss"), // Adjust the date format as needed
+                        returnDate = returnDate.ToString("yyyy-MM-ddTHH:mm:ss"), // Adjust the date format as needed
+                    };
+
+                    var relationParameters = new
+                    {
+                        rId = reservationId,
+                        uId = vehicleId
+                    };
+
+                    // Create the reservation node
+                    await session.RunAsync(createReservationQuery, createParameters);
+
+                    // Create the relationship
+                    await session.RunAsync(createRelationQuery, relationParameters);
+
+                    return Ok("Reservation created successfully.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"An error occurred: {ex.Message}");
+            }
         }
 
-        // Step 2: If no overlapping reservations, proceed to create a new reservation
-        using (var session = _driver.AsyncSession())
+        private Reservation MapRecordToReservation1(IRecord record)
         {
-            // Generate a unique reservationId
-            string reservationId = Guid.NewGuid().ToString();
-
-            var createReservationQuery = @"CREATE (r:Reservation {Id: $rId, PickupDate: $pickupDate, ReturnDate: $returnDate})";
-            var createRelationQuery = @"MATCH (u:Vehicle {Id: $uId}), (r:Reservation {Id: $rId})
-                                        CREATE (u)-[:RESERVED]->(r)";
-
-            var createParameters = new
+            var reservation = new Reservation
             {
-                rId = reservationId,
-                pickupDate = pickupDate.ToString("yyyy-MM-ddTHH:mm:ss"), // Adjust the date format as needed
-                returnDate = returnDate.ToString("yyyy-MM-ddTHH:mm:ss"), // Adjust the date format as needed
+                Id = record["reservationId"].As<string>(),
+                PickupDate = DateTime.Parse(record["pickupDate"].As<string>()),
+                ReturnDate = DateTime.Parse(record["returnDate"].As<string>())
             };
 
-            var relationParameters = new
-            {
-                rId = reservationId,
-                uId = vehicleId
-            };
-
-            // Create the reservation node
-            await session.RunAsync(createReservationQuery, createParameters);
-
-            // Create the relationship
-            await session.RunAsync(createRelationQuery, relationParameters);
-
-            return Ok("Reservation created successfully.");
+            return reservation;
         }
-    }
-    catch (Exception ex)
-    {
-        return BadRequest($"An error occurred: {ex.Message}");
-    }
-}
-
 
 
 
@@ -710,7 +721,7 @@ public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime 
                 {
                     var query = @"MATCH (v:Vehicle)-[:RESERVED]->(r:Reservation)
                                 WHERE v.Id = $vehicleId
-                                RETURN r.Id as reservationId, r";
+                                RETURN r.Id as reservationId, r.PickupDate as pickupDate, r.ReturnDate as returnDate";
 
                     var parameters = new { vehicleId };
 
@@ -721,8 +732,7 @@ public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime 
 
                         await cursor.ForEachAsync(record =>
                         {
-                            var node = record["r"].As<INode>();
-                            var reservation = MapNodeToReservation(node);
+                            var reservation = MapRecordToReservation1(record);
                             reservations.Add(reservation);
                         });
 
@@ -772,7 +782,7 @@ public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime 
                 }
                 else
                 {
-                    return result; 
+                    return result;
                 }
             }
             catch (Exception ex)
@@ -780,8 +790,6 @@ public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime 
                 return BadRequest($"An error occurred: {ex.Message}");
             }
         }
-
-
 
 
     }
