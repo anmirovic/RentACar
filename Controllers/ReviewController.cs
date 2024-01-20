@@ -52,15 +52,15 @@ namespace Databaseaccess.Controllers
         }
 
         [HttpPost("GiveReview")]
-        public async Task<IActionResult> GiveReview(int userId, int reviewId)
+        public async Task<IActionResult> GiveReview(string userId, string reviewId)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
                     
-                    var query = @"MATCH (u:User) WHERE ID(u) = $uId
-                                MATCH (r:Review) WHERE ID(r) = $rId
+                    var query = @"MATCH (u:User) WHERE u.Id = $uId
+                                MATCH (r:Review) WHERE r.Id = $rId
                                 CREATE (u)-[:GIVES]->(r)";
                     
                     var parameters = new
@@ -90,25 +90,17 @@ namespace Databaseaccess.Controllers
                 {
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
-                        var query = "MATCH (n:Review) RETURN ID(n) as reviewId, n";
+                        var query = "MATCH (n:Review) RETURN n.Id as reviewId, n";
                         var cursor = await tx.RunAsync(query);
-                        var reviews = new List<object>();
+                        var reviews = new List<Review>();
 
                         await cursor.ForEachAsync(record =>
                         {
-                            var review = new Dictionary<string, object>();
-                            review.Add("reviewId", record["reviewId"].As<long>());
-
+                        
                             var node = record["n"].As<INode>();
-                            var reviewAttributes = new Dictionary<string, object>();
-
-                            foreach (var property in node.Properties)
-                            {
-                                reviewAttributes.Add(property.Key, property.Value);
-                            }
-
-                            review.Add("attributes", reviewAttributes);
+                            var review = MapNodeToReview(node);
                             reviews.Add(review);
+                        
                         });
 
                         return reviews;
@@ -125,14 +117,14 @@ namespace Databaseaccess.Controllers
 
 
         [HttpDelete]
-        public async Task<IActionResult> RemoveReview(int reviewId)
+        public async Task<IActionResult> RemoveReview(string reviewId)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var checkReviewQuery = "MATCH (r:Review) WHERE ID(r) = $aId RETURN COUNT(r) as count";
-                    var checkReviewParameters = new { aId = reviewId };
+                    var checkReviewQuery = "MATCH (r:Review) WHERE r.Id = $reviewId RETURN COUNT(r) as count";
+                    var checkReviewParameters = new {reviewId };
                     var result = await session.RunAsync(checkReviewQuery, checkReviewParameters);
 
                     var count = await result.SingleAsync(r => r["count"].As<int>());
@@ -142,7 +134,7 @@ namespace Databaseaccess.Controllers
                         return NotFound($"Review with ID {reviewId} does not exist.");
                     }
 
-                    var query = @"MATCH (a:Review) where ID(a)=$aId
+                    var query = @"MATCH (a:Review) where a.Id=$aId
                                 OPTIONAL MATCH (a)-[r]-()
                                 DELETE r,a";
                     var parameters = new { aId = reviewId };
@@ -157,14 +149,14 @@ namespace Databaseaccess.Controllers
         }
 
         [HttpPut("UpdateReview")]
-        public async Task<IActionResult> UpdateReview(int reviewId, int newRating, string newComment)
+        public async Task<IActionResult> UpdateReview(string reviewId, int newRating, string newComment)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
-                    var checkReviewQuery = "MATCH (r:Review) WHERE ID(r) = $aId RETURN COUNT(r) as count";
-                    var checkReviewParameters = new { aId = reviewId };
+                    var checkReviewQuery = "MATCH (r:Review) WHERE r.Id = $reviewId RETURN COUNT(r) as count";
+                    var checkReviewParameters = new {reviewId };
                     var result = await session.RunAsync(checkReviewQuery, checkReviewParameters);
 
                     var count = await result.SingleAsync(r => r["count"].As<int>());
@@ -174,7 +166,7 @@ namespace Databaseaccess.Controllers
                         return NotFound($"Review with ID {reviewId} does not exist.");
                     }
                     
-                    var query = @"MATCH (n:Review) WHERE ID(n)=$aId
+                    var query = @"MATCH (n:Review) WHERE n.Id=$aId
                                 SET n.rating=$rating
                                 SET n.comment=$comment
                                 RETURN n";
@@ -189,6 +181,20 @@ namespace Databaseaccess.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        private Review MapNodeToReview(INode node)
+        {
+            var review = new Review
+            {
+                Id = node["Id"].As<string>(),
+                Rating = node["rating"].As<int>(),
+                Comment = node["comment"].As<string>(),
+                
+                    
+            };
+
+            return review;
         }
     }
 

@@ -20,9 +20,9 @@ namespace Databaseaccess.Models
         //[Required]
         //public DateTime ReturnDate { get; set; }
         [Required]
-        public ZonedDateTime PickupDate { get; set; }
+        public DateTime PickupDate { get; set; }
         [Required]
-        public ZonedDateTime ReturnDate { get; set; }
+        public DateTime ReturnDate { get; set; }
         [JsonIgnore]
         public List<Review>? Reviews { get; set; }
         

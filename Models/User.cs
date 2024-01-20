@@ -27,8 +27,16 @@ namespace Databaseaccess.Models
         public List<Review>? Reviews { get; set; }
         [JsonIgnore]
         public List<Vehicle>? Vehicles { get; set; }
-        
-       
+          
         
     }
+
+    public class UpdateUserDto
+    {
+        public string NewUsername { get; set; }
+        public string NewEmail { get; set; }
+        public string NewPassword { get; set; }
+        public string NewRole { get; set; }
+    }
+
 }

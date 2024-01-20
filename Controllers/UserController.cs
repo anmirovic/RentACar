@@ -126,15 +126,15 @@ namespace Databaseaccess.Controllers
                 using (var session = _driver.AsyncSession())
                 {
 
-                    var query = "MATCH (n:User {username: $username, password: $password}) RETURN ID(n) as userId, n";
+                    var query = "MATCH (n:User {username: $username, password: $password}) RETURN n.Id as userId, n";
                     var parameters = new { username, password };
 
                     var result = await session.RunAsync(query, parameters);
 
                     if (await result.FetchAsync())
                     {
-                        var userId = result.Current["userId"].As<long>();
-                        var token = GenerateJwtToken(userId.ToString());
+                        var userId = result.Current["userId"].As<string>();
+                        var token = GenerateJwtToken(userId);
                         //Response.Cookies.Append("jwt", token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
                         //return Ok(new {  message = "success" });
                         return Ok(new { UserId = userId, Username = username, Token = token, Message = "User successfully logged in." });
@@ -171,32 +171,20 @@ namespace Databaseaccess.Controllers
     }
 
     [HttpGet("GetUserById")]
-    public async Task<IActionResult> GetUserById(int userId)
+    public async Task<IActionResult> GetUserById(string userId)
     {
         try
         {
             using (var session = _driver.AsyncSession())
             {
-                var query = "MATCH (n:User) WHERE ID(n) = $userId RETURN ID(n) as userId, n";
+                var query = "MATCH (n:User) WHERE n.Id = $userId RETURN n";
                 var parameters = new { userId };
 
                 var result = await session.RunAsync(query, parameters);
 
                 if (await result.FetchAsync())
                 {
-                    var user = new Dictionary<string, object>();
-                    user.Add("userId", result.Current["userId"].As<long>());
-
-                    var node = result.Current["n"].As<INode>();
-                    var userAttributes = new Dictionary<string, object>();
-
-                    foreach (var property in node.Properties)
-                    {
-                        userAttributes.Add(property.Key, property.Value);
-                    }
-
-                    user.Add("attributes", userAttributes);
-
+                    var user = MapNodeToUser(result.Current["n"].As<INode>());
                     return Ok(user);
                 }
                 else
@@ -210,8 +198,6 @@ namespace Databaseaccess.Controllers
             return BadRequest(ex.Message);
         }
     }
-
-
 
 
     //    [HttpPost]
@@ -244,16 +230,16 @@ namespace Databaseaccess.Controllers
 
 
         [HttpDelete]
-        public async Task<IActionResult> RemoveUser(int userId)
+        public async Task<IActionResult> RemoveUser(string userId)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
                     
-                    var checkUserQuery = "MATCH (a:User) WHERE ID(a) = $aId RETURN COUNT(a) as count";
-                    var checkUserParameters = new { aId = userId };
-                    var result = await session.RunAsync(checkUserQuery, checkUserParameters);
+                    var query = "MATCH (n:User) WHERE n.Id = $userId RETURN COUNT(n) as count";
+                    var parameters = new { userId };
+                    var result = await session.RunAsync(query, parameters);
 
                     var count = await result.SingleAsync(r => r["count"].As<int>());
 
@@ -262,11 +248,11 @@ namespace Databaseaccess.Controllers
                         return NotFound($"User with ID {userId} does not exist.");
                     }
 
-                    var deleteQuery = @"MATCH (a:User) WHERE ID(a)=$aId
+                    var deleteQuery = @"MATCH (a:User) WHERE a.Id=$userId
                                         OPTIONAL MATCH (a)-[r]-()
                                         DELETE r, a";
 
-                    var deleteParameters = new { aId = userId };
+                    var deleteParameters = new { userId };
                     await session.RunAsync(deleteQuery, deleteParameters);
 
                     return Ok();
@@ -288,24 +274,14 @@ namespace Databaseaccess.Controllers
                 {
                     var result = await session.ReadTransactionAsync(async tx =>
                     {
-                        var query = "MATCH (n:User) RETURN ID(n) as userId, n";
+                        var query = "MATCH (n:User) RETURN n";
                         var cursor = await tx.RunAsync(query);
-                        var users = new List<object>();
+                        var users = new List<User>();
 
                         await cursor.ForEachAsync(record =>
                         {
-                            var user = new Dictionary<string, object>();
-                            user.Add("userId", record["userId"].As<long>());
-
                             var node = record["n"].As<INode>();
-                            var userAttributes = new Dictionary<string, object>();
-
-                            foreach (var property in node.Properties)
-                            {
-                                userAttributes.Add(property.Key, property.Value);
-                            }
-
-                            user.Add("attributes", userAttributes);
+                            var user = MapNodeToUser(node);
                             users.Add(user);
                         });
 
@@ -322,15 +298,15 @@ namespace Databaseaccess.Controllers
         }
 
         [HttpPut("UpdateUser")]
-        public async Task<IActionResult> UpdateUser(int userId, string newUsername, string newEmail, string newPassword, string newRole)
+        public async Task<IActionResult> UpdateUser(string userId, string newUsername, string newEmail, string newPassword, string newRole)
         {
             try
             {
                 using (var session = _driver.AsyncSession())
                 {
                     
-                    var checkUserQuery = "MATCH (n:User) WHERE ID(n) = $aId RETURN COUNT(n) as count";
-                    var checkUserParameters = new { aId = userId };
+                    var checkUserQuery = "MATCH (n:User) WHERE n.Id = $userId RETURN COUNT(n) as count";
+                    var checkUserParameters = new { userId };
                     var result = await session.RunAsync(checkUserQuery, checkUserParameters);
 
                     var count = await result.SingleAsync(r => r["count"].As<int>());
@@ -341,7 +317,7 @@ namespace Databaseaccess.Controllers
                     }
 
                     
-                    var updateQuery = @"MATCH (n:User) WHERE ID(n)=$aId
+                    var updateQuery = @"MATCH (n:User) WHERE n.Id=$userId
                                         SET n.username=$username
                                         SET n.email=$email
                                         SET n.password=$password
@@ -350,7 +326,7 @@ namespace Databaseaccess.Controllers
 
                     var updateParameters = new
                     {
-                        aId = userId,
+                        userId = userId,
                         username = newUsername,
                         email = newEmail,
                         password = newPassword,
@@ -367,7 +343,20 @@ namespace Databaseaccess.Controllers
             }
         }
 
+        private User MapNodeToUser(INode node)
+        {
+            var user = new User
+            {
+                Id = node["Id"].As<string>(),
+                Username = node["username"].As<string>(),
+                Email = node["email"].As<string>(),
+                Password = node["password"].As<string>(),
+                Role = node["role"].As<string>(),
+                    
+            };
 
+            return user;
+        }
         
     }
 }
