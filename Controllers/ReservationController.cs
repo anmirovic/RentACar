@@ -26,13 +26,6 @@ namespace Databaseaccess.Controllers
                 using (var session = _driver.AsyncSession())
                 {
 
-                    //var query = @"
-                    //    CREATE (r:Reservation {
-                    //        Id: $Id,
-                    //        reservationDate: $reservationDate,
-                    //        duration: $duration 
-                    //    })";
-
                     var query = @"
                         CREATE (r:Reservation {
                             Id: $Id,
@@ -87,49 +80,6 @@ namespace Databaseaccess.Controllers
         
         }
 
-        
-        // [HttpGet("AllReservations")]
-        // public async Task<IActionResult> AllReservations()
-        // {
-        //     try
-        //     {
-        //         using (var session = _driver.AsyncSession())
-        //         {
-        //             var result = await session.ReadTransactionAsync(async tx =>
-        //             {
-        //                 var query = "MATCH (n:Reservation) RETURN ID(n) as reservationId, n";
-        //                 var cursor = await tx.RunAsync(query);
-        //                 var reservations = new List<object>();
-
-        //                 await cursor.ForEachAsync(record =>
-        //                 {
-        //                     var reservation = new Dictionary<string, object>();
-        //                     reservation.Add("reservationId", record["reservationId"].As<long>());
-
-        //                     var node = record["n"].As<INode>();
-        //                     var reservationAttributes = new Dictionary<string, object>();
-
-        //                     foreach (var property in node.Properties)
-        //                     {
-        //                         reservationAttributes.Add(property.Key, property.Value);
-        //                     }
-
-        //                     reservation.Add("attributes", reservationAttributes);
-        //                     reservations.Add(reservation);
-                            
-        //                 });
-
-        //                 return reservations;
-        //             });
-
-        //             return Ok(result);
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         return BadRequest(ex.Message);
-        //     }
-        // }
 
         [HttpGet("AllReservations")]
         public async Task<IActionResult> AllReservations()
@@ -164,6 +114,7 @@ namespace Databaseaccess.Controllers
             }
         }
     
+
         [HttpDelete]
         public async Task<IActionResult> RemoveReservation(string reservationId)
         {
@@ -186,7 +137,7 @@ namespace Databaseaccess.Controllers
                     var updateAvailabilityQuery = @"
                         MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
                         WHERE r.Id = $aId
-                        SET v.availability = CASE WHEN COUNT((v)-[:RESERVED]->(:Reservation)) = 1 THEN true ELSE false END
+                        SET v.availability = true
                         DELETE rel
                     ";
                     var parameters = new { aId = reservationId };

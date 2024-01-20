@@ -200,34 +200,6 @@ namespace Databaseaccess.Controllers
     }
 
 
-    //    [HttpPost]
-    //     public async Task<IActionResult> AddUser(User user)
-    //     {
-    //         try
-    //         {
-    //             using (var session = _driver.AsyncSession())
-    //             {
-    //                 var query = @"CREATE (n:User { username: $username, email: $email, password: $password, role: $role})";
-
-    //                 var parameters = new
-    //                 {
-    //                     username = user.Username,
-    //                     email = user.Email,
-    //                     password = user.Password,
-    //                     role = user.Role,
-    //                 };
-                    
-    //                 await session.RunAsync(query, parameters);
-    //                 return Ok();
-                    
-    //             }
-    //         }
-    //         catch (Exception ex)
-    //         {
-    //             return BadRequest(ex.Message);
-    //         }
-    //     }
-
 
         [HttpDelete]
         public async Task<IActionResult> RemoveUser(string userId)

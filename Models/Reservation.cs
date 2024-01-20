@@ -13,14 +13,6 @@ namespace Databaseaccess.Models
     public class Reservation
     {
         public string Id { get; set; }
-        //[Required]
-        //public DateTime ReservationDate { get; set; }
-        //[Required]
-        //public int Duration { get; set; } //in days
-        //[Required]
-        //public DateTime PickupDate { get; set; }
-        //[Required]
-        //public DateTime ReturnDate { get; set; }
         [Required]
         public DateTime PickupDate { get; set; }
         [Required]

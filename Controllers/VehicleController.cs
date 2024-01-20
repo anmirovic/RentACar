@@ -82,152 +82,6 @@ namespace Databaseaccess.Controllers
             }
         }
 
-        // [HttpPost("VehicleReservations")]
-        // public async Task<IActionResult> VehicleReservations(string vehicleId, string reservationId)
-        // {
-        //     bool flag = true;
-
-        //     try
-        //     {
-        //         using (var session = _driver.AsyncSession())
-        //         {
-        //             var query2 = "MATCH (n:Reservation) WHERE n.Id = $reservationId RETURN n";
-        //             var parameters2 = new { reservationId = reservationId.ToString() };
-
-        //             var result2 = await session.RunAsync(query2, parameters2);
-        //             //var resultList = new List<Reservation>();
-
-        //             //await result2.ForEachAsync(record =>
-        //             //{
-        //             //    var reservationAttributes = new Reservation();
-        //             //    var item = record["n"].As<INode>();
-
-        //             //    reservationAttributes.Id = item.Properties["Id"].ToString();
-        //             //    reservationAttributes.PickupDate = (ZonedDateTime)item.Properties["pickupDate"];
-        //             //    reservationAttributes.ReturnDate = (ZonedDateTime)item.Properties["returnDate"];
-
-        //             //    resultList.Add(reservationAttributes);
-        //             //});
-
-        //             var resultList = await session.ReadTransactionAsync(async tx =>
-        //             {
-        //                 var result2 = await tx.RunAsync(query2, parameters2);
-        //                 var resultList2 = new List<Reservation>();
-        //                 await result2.ForEachAsync(record =>
-        //                 {
-        //                     var reservation = new Reservation();
-        //                     //reservation.Add("Id", record["r"].As<string>());
-
-        //                     var node = record["r"].As<INode>();
-        //                     var reservationAttributes = new Dictionary<string, object>();
-        //                     reservation.Id = node.Properties["Id"].ToString();
-        //                     //reservation.PickupDate = (ZonedDateTime)node.Properties["pickupDate"];
-        //                     //reservation.ReturnDate = (ZonedDateTime)node.Properties["returnDate"];
-        //                     resultList2.Add(reservation);
-        //                 });
-        //                 return resultList2;
-        //             });
-
-
-
-
-        //             var query = @"MATCH (v:Vehicle)-[:RESERVED]->(r:Reservation)
-        //                         WHERE v.Id = $vehicleId
-        //                         RETURN r";
-
-        //             var parameters = new { vehicleId };
-
-        //             //var reservations = new List<object>();
-        //             var reservations = await session.ReadTransactionAsync(async tx =>
-        //             {
-        //                 var cursor = await tx.RunAsync(query, parameters);
-        //                 var reservations = new List<Reservation>();
-
-        //                 await cursor.ForEachAsync(record =>
-        //                 {
-        //                     var reservation = new Reservation();
-        //                     //reservation.Add("Id", record["r"].As<string>());
-
-        //                     var node = record["r"].As<INode>();
-        //                     var reservationAttributes = new Dictionary<string, object>();
-        //                     reservation.Id = node.Properties["Id"].ToString();
-        //                    // reservation.PickupDate = (ZonedDateTime)node.Properties["pickupDate"];
-        //                    // reservation.ReturnDate = (ZonedDateTime)node.Properties["returnDate"];
-        //                     //foreach (var property in node.Properties)
-        //                     //{
-        //                     //    reservationAttributes.Add(property.Key, property.Value);
-        //                     //}
-
-        //                     //reservation.Add("attributes", reservationAttributes);
-        //                     reservations.Add(reservation);
-        //                 });
-
-        //                 return reservations;
-        //             });
-        //             foreach(var reservation in reservations)
-        //             {
-        //                 if (resultList[0].PickupDate >= reservation.PickupDate && resultList[0].PickupDate <= reservation.ReturnDate)
-        //                     flag = false;
-        //                 if (resultList[0].ReturnDate >= reservation.PickupDate && resultList[0].ReturnDate <= reservation.ReturnDate)
-        //                     flag = false;
-        //             }
-
-        //             var query3 = @"MATCH (u:Vehicle) WHERE u.Id = $uId
-        //                         MATCH (r:Reservation) WHERE r.Id = $rId
-        //                         CREATE (u)-[:RESERVED]->(r)";
-
-        //             var parameters3 = new
-        //             {
-        //                 uId = vehicleId,
-        //                 rId = reservationId
-        //             };
-
-        //             await session.RunAsync(query3, parameters3);
-
-
-        //             //var checkAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId AND v.availability = true
-        //             //                       RETURN v";
-
-        //             //var checkAvailabilityParameters = new { vId = vehicleId };
-
-        //             //var result = await session.RunAsync(checkAvailabilityQuery, checkAvailabilityParameters);
-        //             //var record = await result.SingleAsync();
-
-        //             //if (record==null)
-        //             //{
-        //             //    return BadRequest("The vehicle is not available for reservation.");
-        //             //}
-
-        //             //var updateAvailabilityQuery = @"MATCH (v:Vehicle) WHERE ID(v) = $vId
-        //             //                       SET v.availability = false";
-
-        //             //var updateAvailabilityParameters = new { vId = vehicleId };
-
-        //             //await session.RunAsync(updateAvailabilityQuery, updateAvailabilityParameters);
-
-        //             //var query = @"MATCH (u:Vehicle) WHERE ID(u) = $uId
-        //             //            MATCH (r:Reservation) WHERE ID(r) = $rId
-        //             //            CREATE (u)-[:RESERVED]->(r)";
-
-        //             //var parameters = new
-        //             //{
-        //             //    uId = vehicleId,
-        //             //    rId=reservationId
-        //             //};
-
-        //             //await session.RunAsync(query, parameters);
-        //             return Ok();
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         return BadRequest(ex.Message);
-        //     }
-        
-        // }
-
-
-
         [HttpPost("VehicleReviews")]
         public async Task<IActionResult> VehicleReviews(string vehicleId, string reviewId)
         {
@@ -490,39 +344,6 @@ namespace Databaseaccess.Controllers
         }
 
 
-        // [HttpGet("ByDailyPrice")]
-        // public async Task<IActionResult> GetVehiclesByDailyPrice(double dailyPrice)
-        // {
-        //     try
-        //     {
-        //         using (var session = _driver.AsyncSession())
-        //         {
-        //             var query = "MATCH (n:Vehicle) WHERE n.dailyPrice = $dailyPrice RETURN n";
-        //             var parameters = new { dailyPrice };
-        //             var result = await session.ReadTransactionAsync(async tx =>
-        //             {
-        //                 var cursor = await tx.RunAsync(query, parameters);
-        //                 var vehicles = new List<Vehicle>();
-
-        //                 await cursor.ForEachAsync(record =>
-        //                 {
-        //                     var node = record["n"].As<INode>();
-        //                     var vehicle = ConvertNodeToVehicle(node);
-        //                     vehicles.Add(vehicle);
-        //                 });
-
-        //                 return vehicles;
-        //             });
-
-        //             return Ok(result);
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         return BadRequest(ex.Message);
-        //     }
-        // }
-
         [HttpGet("ByDailyPrice")]
         public async Task<IActionResult> GetVehiclesByDailyPrice(double minDailyPrice, double maxDailyPrice)
         {
@@ -641,66 +462,26 @@ namespace Databaseaccess.Controllers
                 return vehicle;
         }
 
-        // private Reservation MapNodeToReservation(INode node)
-        // {
-        //     var reservation = new Reservation
-        //     {
-        //         Id = node["Id"].As<string>(),
-        //         PickupDate = DateTime.Parse(node["pickupDate"].As<string>()),
-        //         ReturnDate = DateTime.Parse(node["returnDate"].As<string>()),   
-                    
-        //     };
 
-        //     return reservation;
-        // }
-
-        // [HttpPost("VehicleReservations2")]
-        // public async Task<IActionResult> VehicleReservations2(string vehicleId, string reservationId)
-        // {
-        //     try
-        //     {
-        //         using (var session = _driver.AsyncSession())
-        //         {
-
-        //             var query = @"MATCH (u:Vehicle) WHERE u.Id = $uId
-        //                         MATCH (r:Reservation) WHERE r.Id = $rId
-        //                         CREATE (u)-[:RESERVED]->(r)";
-
-        //             var parameters = new
-        //             {
-        //                 uId = vehicleId,
-        //                 rId=reservationId
-        //             };
-
-        //             await session.RunAsync(query, parameters);
-        //             return Ok();
-        //         }
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         return BadRequest(ex.Message);
-        //     }
-
-        // }
 
         [HttpPost("VehicleReservations")]
         public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime pickupDate, DateTime returnDate)
         {
             try
             {
-                // Step 1: Check for overlapping reservations
+                
                 var overlapResult = await CheckOverlappingReservations(vehicleId, pickupDate, returnDate);
 
                 if (overlapResult is BadRequestObjectResult)
                 {
-                    // Overlapping reservations exist, return the same BadRequest response.
+                    
                     return overlapResult;
                 }
 
-                // Step 2: If no overlapping reservations, proceed to create a new reservation
+                
                 using (var session = _driver.AsyncSession())
                 {
-                    // Generate a unique reservationId
+                    
                     string reservationId = Guid.NewGuid().ToString();
 
                     var createReservationQuery = @"CREATE (r:Reservation {Id: $rId, PickupDate: $pickupDate, ReturnDate: $returnDate})";
@@ -713,8 +494,8 @@ namespace Databaseaccess.Controllers
                     var createParameters = new
                     {
                         rId = reservationId,
-                        pickupDate = pickupDate.ToString("yyyy-MM-ddTHH:mm:ss"), // Adjust the date format as needed
-                        returnDate = returnDate.ToString("yyyy-MM-ddTHH:mm:ss"), // Adjust the date format as needed
+                        pickupDate = pickupDate.ToString("yyyy-MM-ddTHH:mm:ss"), 
+                        returnDate = returnDate.ToString("yyyy-MM-ddTHH:mm:ss"), 
                     };
 
                     var relationParameters = new
@@ -723,10 +504,10 @@ namespace Databaseaccess.Controllers
                         uId = vehicleId
                     };
 
-                    // Create the reservation node
+                    
                     await session.RunAsync(createReservationQuery, createParameters);
 
-                    // Create the relationship
+                    
                     await session.RunAsync(createRelationQuery, relationParameters);
 
                     var result = await session.RunAsync(updateAvailabilityQuery, new { uId = vehicleId });
