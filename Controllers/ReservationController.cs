@@ -186,7 +186,7 @@ namespace Databaseaccess.Controllers
                     var updateAvailabilityQuery = @"
                         MATCH (v:Vehicle)-[rel:RESERVED]->(r:Reservation)
                         WHERE r.Id = $aId
-                        SET v.availability = true
+                        SET v.availability = CASE WHEN COUNT((v)-[:RESERVED]->(:Reservation)) = 1 THEN true ELSE false END
                         DELETE rel
                     ";
                     var parameters = new { aId = reservationId };
@@ -243,6 +243,7 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+        
         [HttpGet("GetReservationsForUser")]
         public async Task<IActionResult> GetReservationsForUser(string userId)
         {
@@ -279,6 +280,8 @@ namespace Databaseaccess.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+
 
         private Reservation MapNodeToReservation(INode node)
         {

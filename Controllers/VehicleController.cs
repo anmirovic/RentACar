@@ -589,6 +589,43 @@ namespace Databaseaccess.Controllers
             }
         }
 
+        [HttpGet("GetVehicleByReservationId")]
+        public async Task<IActionResult> GetVehicleByReservationId(string reservationId)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var query = @"MATCH (r:Reservation)<-[:RESERVED]-(v:Vehicle)
+                                WHERE r.Id = $reservationId
+                                RETURN v.Id as vehicleId, v";
+
+                    var parameters = new { reservationId };
+
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var cursor = await tx.RunAsync(query, parameters);
+                        var vehicles = new List<Vehicle>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var node = record["v"].As<INode>();
+                            var vehicle = MapNodeToVehicle(node);
+                            vehicles.Add(vehicle);
+                        });
+
+                        return vehicles;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
 
         private Vehicle MapNodeToVehicle(INode node)
         {
@@ -604,18 +641,18 @@ namespace Databaseaccess.Controllers
                 return vehicle;
         }
 
-        private Reservation MapNodeToReservation(INode node)
-        {
-            var reservation = new Reservation
-            {
-                Id = node["Id"].As<string>(),
-                PickupDate = DateTime.Parse(node["pickupDate"].As<string>()),
-                ReturnDate = DateTime.Parse(node["returnDate"].As<string>()),   
+        // private Reservation MapNodeToReservation(INode node)
+        // {
+        //     var reservation = new Reservation
+        //     {
+        //         Id = node["Id"].As<string>(),
+        //         PickupDate = DateTime.Parse(node["pickupDate"].As<string>()),
+        //         ReturnDate = DateTime.Parse(node["returnDate"].As<string>()),   
                     
-            };
+        //     };
 
-            return reservation;
-        }
+        //     return reservation;
+        // }
 
         // [HttpPost("VehicleReservations2")]
         // public async Task<IActionResult> VehicleReservations2(string vehicleId, string reservationId)
@@ -669,6 +706,9 @@ namespace Databaseaccess.Controllers
                     var createReservationQuery = @"CREATE (r:Reservation {Id: $rId, PickupDate: $pickupDate, ReturnDate: $returnDate})";
                     var createRelationQuery = @"MATCH (u:Vehicle {Id: $uId}), (r:Reservation {Id: $rId})
                                                 CREATE (u)-[:RESERVED]->(r)";
+                    var updateAvailabilityQuery = @"MATCH (u:Vehicle {Id: $uId})
+                                            SET u.availability = false";
+
 
                     var createParameters = new
                     {
@@ -689,6 +729,8 @@ namespace Databaseaccess.Controllers
                     // Create the relationship
                     await session.RunAsync(createRelationQuery, relationParameters);
 
+                    var result = await session.RunAsync(updateAvailabilityQuery, new { uId = vehicleId });
+
                     return Ok("Reservation created successfully.");
                 }
             }
@@ -698,7 +740,7 @@ namespace Databaseaccess.Controllers
             }
         }
 
-        private Reservation MapRecordToReservation1(IRecord record)
+        private Reservation MapRecordToReservation(IRecord record)
         {
             var reservation = new Reservation
             {
@@ -732,7 +774,7 @@ namespace Databaseaccess.Controllers
 
                         await cursor.ForEachAsync(record =>
                         {
-                            var reservation = MapRecordToReservation1(record);
+                            var reservation = MapRecordToReservation(record);
                             reservations.Add(reservation);
                         });
 
