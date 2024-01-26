@@ -183,6 +183,44 @@ namespace Databaseaccess.Controllers
             }
         }
 
+        [HttpGet("GetAllReviewsForUser")]
+        public async Task<IActionResult> GetAllReviewsForUser(string userId)
+        {
+            try
+            {
+                using (var session = _driver.AsyncSession())
+                {
+                    var result = await session.ReadTransactionAsync(async tx =>
+                    {
+                        var query = @"
+                    MATCH (u:User {Id: $userId})-[:GIVES]->(r:Review)
+                    RETURN r";
+
+                        var parameters = new { userId };
+
+                        var cursor = await tx.RunAsync(query, parameters);
+                        var reviews = new List<Review>();
+
+                        await cursor.ForEachAsync(record =>
+                        {
+                            var node = record["r"].As<INode>();
+                            var review = MapNodeToReview(node);
+                            reviews.Add(review);
+                        });
+
+                        return reviews;
+                    });
+
+                    return Ok(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
         private Review MapNodeToReview(INode node)
         {
             var review = new Review
@@ -196,6 +234,7 @@ namespace Databaseaccess.Controllers
 
             return review;
         }
+
     }
 
 }
