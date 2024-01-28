@@ -3,119 +3,81 @@ using Neo4j.Driver;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Databaseaccess.Models;
+using RentaCar.Models;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using RentaCar.Services;
 
 
-namespace Databaseaccess.Controllers
+namespace RentaCar.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
     public class UserController : ControllerBase
-    {
-        private readonly IDriver _driver;
-        private readonly string _jwtSecret;
-        private readonly int _jwtExpirationMinutes = 1440;
+    { 
+        private readonly UserService _userservice;
 
-        public UserController(IDriver driver)
+        public UserController(UserService userservice)
         {
-            _driver = driver;
-            _jwtSecret = _jwtSecret = GenerateRandomKey(2048);
+            _userservice=userservice;
 
         }
     
-    private string GenerateRandomKey(int keySize)
-    {
-            using (var rsa = new RSACng(keySize))
-            {
-                RSAParameters parameters = rsa.ExportParameters(true);
-                byte[] key = parameters.Modulus;
-                return Convert.ToBase64String(key);
-            }
-    }
 
-
-    [HttpPost("RegisterUser")]
-    public async Task<IActionResult> RegisterUser(User user)
-    {
-        try
+        [HttpPost("RegisterUser")]
+        public async Task<IActionResult> RegisterUser(User user)
         {
+            try
+         {
             
-            if (await IsEmailTaken(user.Email))
+            if (await _userservice.IsEmailTaken(user.Email))
             {
                 return BadRequest("Email is already taken.");
             }
+            var result= await _userservice.AddUser(user);
+            return Ok("User registered successfully.");
+         }
+            catch (Exception ex)
+            {
+             return BadRequest(ex.Message);
+            }
+        }
 
+    // [HttpPost("AddUser")]
+    // public async Task<IActionResult> AddUser(User user)
+    // {
+    //     try
+    //     { 
+    //         if (await _userservice.IsEmailTaken(user.Email))
+    //         {
+    //             return BadRequest("Email is already taken.");
+    //         }
             
-            var addUserResult = await AddUser(user);
+    //         await _userservice.AddUser(user);
+    //         return Ok();
+    //     }
+    //     catch(Exception ex)
+    //     {
+    //         return BadRequest(ex.Message);
+    //     }
+    // }
 
-            
-            if (addUserResult is OkResult)
-            {
-                return Ok("User registered successfully.");
-            }
-            else
-            {
-                
-                return addUserResult;
-            }
-        }
-        catch (Exception ex)
+        [HttpPost("IsEmailTaken")]
+        public async Task<ActionResult<bool>> IsEmailTaken(string email)
         {
-            return BadRequest(ex.Message);
-        }
-    }
-
-    [HttpPost("AddUser")]
-    public async Task<IActionResult> AddUser(User user)
-    {
-        try
-        {
-            
-            if (await IsEmailTaken(user.Email))
+            try
             {
-                return BadRequest("Email is already taken.");
+                var result= await _userservice.IsEmailTaken(email);
+                return Ok(result);
             }
-
-            using (var session = _driver.AsyncSession())
+            catch(Exception ex)
             {
-                var query = @"CREATE (n:User { Id: $Id, username: $username, email: $email, password: $password, role: $role})";
-
-                var parameters = new
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    username = user.Username,
-                    email = user.Email,
-                    password = user.Password, 
-                    role = user.Role,
-                };
-
-                await session.RunAsync(query, parameters);
-                return Ok();
+                return BadRequest(ex.Message);
             }
+    
         }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
-
-    private async Task<bool> IsEmailTaken(string email)
-    {
-        using (var session = _driver.AsyncSession())
-        {
-            var query = "MATCH (n:User {email: $email}) RETURN COUNT(n) as count";
-            var parameters = new { email };
-
-            var result = await session.RunAsync(query, parameters);
-            var count = await result.SingleAsync(r => r["count"].As<int>());
-
-            return count > 0;
-        }
-    }
 
 
         [HttpPost("LoginUser")]
@@ -123,27 +85,24 @@ namespace Databaseaccess.Controllers
         {
             try
             {
-                using (var session = _driver.AsyncSession())
+                if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
                 {
-
-                    var query = "MATCH (n:User {username: $username, password: $password}) RETURN n.Id as userId, n";
-                    var parameters = new { username, password };
-
-                    var result = await session.RunAsync(query, parameters);
-
-                    if (await result.FetchAsync())
-                    {
-                        var userId = result.Current["userId"].As<string>();
-                        var token = GenerateJwtToken(userId);
-                        //Response.Cookies.Append("jwt", token, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
-                        //return Ok(new {  message = "success" });
-                        return Ok(new { UserId = userId, Username = username, Token = token, Message = "User successfully logged in." });
-                    }
-                    else
-                    {
-                        return Unauthorized("Invalid username or password.");
-                    }
+                    return BadRequest("Username and password are required.");
                 }
+
+                var result=await _userservice.LoginUser(username, password);
+
+                if (await result.FetchAsync())
+                {
+                    var userId = result.Current["userId"].As<string>();
+                    var token = _userservice.GenerateJwtToken(userId);
+                    return Ok(new { UserId = userId, Username = username, Token = token, Message = "User successfully logged in." });            
+                }
+                else
+                {
+                    return Unauthorized("Invalid username or password.");
+                }
+                
             }
             catch (Exception ex)
             {
@@ -151,84 +110,46 @@ namespace Databaseaccess.Controllers
             }
         }
 
-        private string GenerateJwtToken(string userId)
-    {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Convert.FromBase64String(_jwtSecret);
 
-        var tokenDescriptor = new SecurityTokenDescriptor
+        [HttpGet("GetUserById")]
+        public async Task<IActionResult> GetUserById(string userId)
         {
-            Subject = new ClaimsIdentity(new[]
+            try
             {
-                new Claim(ClaimTypes.Name, userId)
-            }),
-            Expires = DateTime.UtcNow.AddMinutes(_jwtExpirationMinutes),
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-        };
+                var user = await _userservice.GetUserById(userId);
 
-        var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
-    }
-
-    [HttpGet("GetUserById")]
-    public async Task<IActionResult> GetUserById(string userId)
-    {
-        try
-        {
-            using (var session = _driver.AsyncSession())
+                    if (user != null)
+                    {
+                        return Ok(user);
+                    }
+                    else
+                    {
+                        return NotFound($"User with ID {userId} not found.");
+                    }
+            }
+            catch (Exception ex)
             {
-                var query = "MATCH (n:User) WHERE n.Id = $userId RETURN n";
-                var parameters = new { userId };
-
-                var result = await session.RunAsync(query, parameters);
-
-                if (await result.FetchAsync())
-                {
-                    var user = MapNodeToUser(result.Current["n"].As<INode>());
-                    return Ok(user);
-                }
-                else
-                {
-                    return NotFound($"User with ID {userId} not found.");
-                }
+                return BadRequest(ex.Message);
             }
         }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
-    }
 
 
-
-        [HttpDelete]
+        [HttpDelete("RemoveUser")]
         public async Task<IActionResult> RemoveUser(string userId)
         {
             try
             {
-                using (var session = _driver.AsyncSession())
+                var result = await _userservice.RemoveUser(userId);
+        
+                if (result == null)
                 {
-                    
-                    var query = "MATCH (n:User) WHERE n.Id = $userId RETURN COUNT(n) as count";
-                    var parameters = new { userId };
-                    var result = await session.RunAsync(query, parameters);
-
-                    var count = await result.SingleAsync(r => r["count"].As<int>());
-
-                    if (count == 0)
-                    {
-                        return NotFound($"User with ID {userId} does not exist.");
-                    }
-
-                    var deleteQuery = @"MATCH (a:User) WHERE a.Id=$userId
-                                        OPTIONAL MATCH (a)-[r]-()
-                                        DELETE r, a";
-
-                    var deleteParameters = new { userId };
-                    await session.RunAsync(deleteQuery, deleteParameters);
-
-                    return Ok();
+                    return NotFound($"User with ID {userId} does not exist.");
                 }
+                else
+                {
+                    return Ok("User successfully removed.");
+                }
+                
             }
             catch (Exception ex)
             {
@@ -242,26 +163,9 @@ namespace Databaseaccess.Controllers
         {
             try
             {
-                using (var session = _driver.AsyncSession())
-                {
-                    var result = await session.ReadTransactionAsync(async tx =>
-                    {
-                        var query = "MATCH (n:User) RETURN n";
-                        var cursor = await tx.RunAsync(query);
-                        var users = new List<User>();
-
-                        await cursor.ForEachAsync(record =>
-                        {
-                            var node = record["n"].As<INode>();
-                            var user = MapNodeToUser(node);
-                            users.Add(user);
-                        });
-
-                        return users;
-                    });
-
-                    return Ok(result);
-                }
+                var users = await _userservice.AllUsers();
+                return Ok(users);
+                
             }
             catch (Exception ex)
             {
@@ -274,40 +178,16 @@ namespace Databaseaccess.Controllers
         {
             try
             {
-                using (var session = _driver.AsyncSession())
+                var result=await _userservice.UpdateUser(userId, newUsername, newEmail, newPassword, newRole);
+                if (result == null)
                 {
-                    
-                    var checkUserQuery = "MATCH (n:User) WHERE n.Id = $userId RETURN COUNT(n) as count";
-                    var checkUserParameters = new { userId };
-                    var result = await session.RunAsync(checkUserQuery, checkUserParameters);
-
-                    var count = await result.SingleAsync(r => r["count"].As<int>());
-
-                    if (count == 0)
-                    {
-                        return NotFound($"User with ID {userId} does not exist.");
-                    }
-
-                    
-                    var updateQuery = @"MATCH (n:User) WHERE n.Id=$userId
-                                        SET n.username=$username
-                                        SET n.email=$email
-                                        SET n.password=$password
-                                        SET n.role=$role
-                                        RETURN n";
-
-                    var updateParameters = new
-                    {
-                        userId = userId,
-                        username = newUsername,
-                        email = newEmail,
-                        password = newPassword,
-                        role = newRole
-                    };
-
-                    await session.RunAsync(updateQuery, updateParameters);
-                    return Ok();
+                    return NotFound($"User with ID {userId} does not exist.");
                 }
+                else
+                {
+                    return Ok("User successfully updated.");
+                }
+                
             }
             catch (Exception ex)
             {
@@ -315,20 +195,7 @@ namespace Databaseaccess.Controllers
             }
         }
 
-        private User MapNodeToUser(INode node)
-        {
-            var user = new User
-            {
-                Id = node["Id"].As<string>(),
-                Username = node["username"].As<string>(),
-                Email = node["email"].As<string>(),
-                Password = node["password"].As<string>(),
-                Role = node["role"].As<string>(),
-                    
-            };
-
-            return user;
-        }
+        
         
     }
 }

@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.ComponentModel.DataAnnotations;
 
-namespace Databaseaccess.Models
+namespace RentaCar.Models
 {
     public class Review
     {

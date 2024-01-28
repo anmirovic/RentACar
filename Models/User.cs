@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 
-namespace Databaseaccess.Models
+namespace RentaCar.Models
 {
     public class User
     {

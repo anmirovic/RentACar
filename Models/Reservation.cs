@@ -8,7 +8,7 @@ using System.Text.Json.Serialization;
 
 
 
-namespace Databaseaccess.Models
+namespace RentaCar.Models
 {
     public class Reservation
     {
