@@ -317,7 +317,7 @@ namespace RentaCar.Services
             return result;       
         }
         
-        public async Task<IResultCursor> VehicleReservations(string vehicleId, DateTime pickupDate, DateTime returnDate)
+        public async Task<string> VehicleReservations(string userId, string vehicleId, DateTime pickupDate, DateTime returnDate)
         {
             var session = _driver.AsyncSession();     
                     
@@ -347,9 +347,10 @@ namespace RentaCar.Services
 
             await session.RunAsync(createRelationQuery, relationParameters);
 
-            var result = await session.RunAsync(updateAvailabilityQuery, new { uId = vehicleId });
+            await session.RunAsync(updateAvailabilityQuery, new { uId = vehicleId });
+            await MakeReservation(userId, reservationId);
 
-            return result;
+            return reservationId;
                 
         }
 
@@ -397,6 +398,24 @@ namespace RentaCar.Services
             return overlapExists;
 
         }
+
+        public async Task<string> MakeReservation(string userId, string reservationId)
+        {
+            var session = _driver.AsyncSession();
+            var parameters = new
+                {
+                    uId = userId,
+                    rId=reservationId
+                };   
+                    
+            var query = @"MATCH (u:User) WHERE u.Id = $uId
+                        MATCH (r:Reservation) WHERE r.Id = $rId
+                        CREATE (u)-[:MAKES]->(r)";
+                    
+            var result=await session.RunAsync(query, parameters);
+            return parameters.uId;        
+        }
+
 
         private Vehicle MapNodeToVehicle(INode node)
         {

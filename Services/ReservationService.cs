@@ -38,7 +38,7 @@ namespace RentaCar.Services
                 
         }
 
-        public async Task<IResultCursor> MakeReservation(string userId, string reservationId)
+        public async Task<string> MakeReservation(string userId, string reservationId)
         {
             var session = _driver.AsyncSession();
             var parameters = new
@@ -52,7 +52,7 @@ namespace RentaCar.Services
                         CREATE (u)-[:MAKES]->(r)";
                     
             var result=await session.RunAsync(query, parameters);
-            return result;        
+            return parameters.uId;        
         }
 
         public async Task<List<Reservation>> AllReservations()

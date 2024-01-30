@@ -225,7 +225,7 @@ namespace RentaCar.Controllers
         }
 
         [HttpPost("VehicleReservations")]
-        public async Task<IActionResult> VehicleReservations(string vehicleId, DateTime pickupDate, DateTime returnDate)
+        public async Task<IActionResult> VehicleReservations(string userId, string vehicleId, DateTime pickupDate, DateTime returnDate)
         {
             try
             {
@@ -237,8 +237,8 @@ namespace RentaCar.Controllers
                     return BadRequest("Overlapping reservation exists for the specified date range.");
                 }
 
-                var result = await _vehicleservice.VehicleReservations(vehicleId, pickupDate, returnDate);
-                return Ok("Reservation added successfully.");   
+                var result = await _vehicleservice.VehicleReservations(userId,vehicleId, pickupDate, returnDate);
+                return Ok(result);   
                 
             }
             catch (Exception ex)
