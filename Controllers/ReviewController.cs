@@ -36,12 +36,12 @@ namespace RentaCar.Controllers
         }
 
         [HttpPost("GiveReview")]
-        public async Task<IActionResult> GiveReview(string userId, string reviewId)
+        public async Task<IActionResult> GiveReview(string userId, string reviewId, string vehicleId)
         {
             try
             {
-                var result = await _reviewservice.GiveReview(userId, reviewId);
-                return Ok();
+                var result = await _reviewservice.GiveReview(userId, reviewId, vehicleId);
+                return Ok("Review successfully added");
                 
             }
             catch (Exception ex)

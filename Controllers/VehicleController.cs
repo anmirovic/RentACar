@@ -50,20 +50,6 @@ namespace RentaCar.Controllers
             }
         }
 
-        [HttpPost("VehicleReviews")]
-        public async Task<IActionResult> VehicleReviews(string vehicleId, string reviewId)
-        {
-            try
-            {
-                var result = await _vehicleservice.VehicleReviews(vehicleId, reviewId);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        
-        }
 
         [HttpPost("VehicleOwner")]
         public async Task<IActionResult> VehicleOwner(string userId, string vehicleId)

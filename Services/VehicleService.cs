@@ -59,25 +59,6 @@ namespace RentaCar.Services
             return parameters.Id;
         }
 
-        public async Task<IResultCursor> VehicleReviews(string vehicleId, string reviewId)
-        {
-            var session = _driver.AsyncSession();
-        
-            var parameters = new
-            {
-                uId = vehicleId,
-                rId=reviewId
-            };   
-            
-            var query = @"MATCH (u:Vehicle) WHERE u.Id = $uId
-                        MATCH (r:Review) WHERE r.Id = $rId
-                        CREATE (u)-[:HAS]->(r)";
-            
-
-            var result = await session.RunAsync(query, parameters);
-            return result;          
-        }
-
         public async Task<IResultCursor> VehicleOwner(string userId, string vehicleId)
         {
             var session = _driver.AsyncSession();
