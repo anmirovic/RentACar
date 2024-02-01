@@ -14,12 +14,10 @@ namespace RentaCar.Controllers
     [Route("api/[controller]")]
     public class VehicleController : ControllerBase
     {
-        private readonly IDriver _driver;
         private readonly VehicleService _vehicleservice;
 
         public VehicleController(IDriver driver, VehicleService vehicleservice)
         {
-            _driver = driver;
             _vehicleservice=vehicleservice;
         }
 

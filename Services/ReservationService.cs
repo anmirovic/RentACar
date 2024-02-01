@@ -38,22 +38,22 @@ namespace RentaCar.Services
                 
         }
 
-        public async Task<string> MakeReservation(string userId, string reservationId)
-        {
-            var session = _driver.AsyncSession();
-            var parameters = new
-                {
-                    uId = userId,
-                    rId=reservationId
-                };   
+        // public async Task<string> MakeReservation(string userId, string reservationId)
+        // {
+        //     var session = _driver.AsyncSession();
+        //     var parameters = new
+        //         {
+        //             uId = userId,
+        //             rId=reservationId
+        //         };   
                     
-            var query = @"MATCH (u:User) WHERE u.Id = $uId
-                        MATCH (r:Reservation) WHERE r.Id = $rId
-                        CREATE (u)-[:MAKES]->(r)";
+        //     var query = @"MATCH (u:User) WHERE u.Id = $uId
+        //                 MATCH (r:Reservation) WHERE r.Id = $rId
+        //                 CREATE (u)-[:MAKES]->(r)";
                     
-            var result=await session.RunAsync(query, parameters);
-            return parameters.uId;        
-        }
+        //     var result=await session.RunAsync(query, parameters);
+        //     return parameters.uId;        
+        // }
 
         public async Task<List<Reservation>> AllReservations()
         {

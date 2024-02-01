@@ -35,20 +35,20 @@ namespace RentaCar.Controllers
         
         // }
 
-        [HttpPost("MakeReservation")]
-        public async Task<IActionResult> MakeReservation(string userId, string reservationId)
-        {
-            try
-            {
-                var result = await _reservationservice.MakeReservation(userId,reservationId);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+        // [HttpPost("MakeReservation")]
+        // public async Task<IActionResult> MakeReservation(string userId, string reservationId)
+        // {
+        //     try
+        //     {
+        //         var result = await _reservationservice.MakeReservation(userId,reservationId);
+        //         return Ok();
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(ex.Message);
+        //     }
         
-        }
+        // }
 
 
         [HttpGet("AllReservations")]

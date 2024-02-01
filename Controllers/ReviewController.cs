@@ -14,7 +14,7 @@ namespace RentaCar.Controllers
     {
         private readonly ReviewService _reviewservice;
 
-        public ReviewController(ReviewService reviewservice, IDriver driver)
+        public ReviewController(ReviewService reviewservice)
         {
             _reviewservice = reviewservice;
         }
