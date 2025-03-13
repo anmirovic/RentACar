@@ -1,3 +1,5 @@
+RentACar projekat za potrebe predmeta Napredne Baze Podataka
+
 Nikola Đorđević 18153
 Anastasija Mirović 18281
 
