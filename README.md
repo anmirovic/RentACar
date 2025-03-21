@@ -1,11 +1,16 @@
-RentACar projekat za potrebe predmeta Napredne Baze Podataka
+# RentACar project 
 
-Nikola Đorđević 18153
-Anastasija Mirović 18281
+- Neo4j is running via **Docker**  
 
-Neo4j pokrenut preko dockera
+## Accessing the Database  
+You can access the database using the Neo4j Browser at:  
+[http://localhost:7474/browser/](http://localhost:7474/browser/)  
 
-Pristup podacima u bazi preko neo4j browser-a: http://localhost:7474/browser/
+## Starting the Backend  
+To start the backend, run:  
+```sh
+dotnet watch run
 
-Backend se pokreće komandom: dotnet watch run
+
+
 
